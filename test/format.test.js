@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { describeTransaction, teamName, weeklyRecap } from '../src/format.js';
+import { describeTransaction, teamName, weeklyRecap, playerUpdateText, nameKey } from '../src/format.js';
 
 const players = {
   1: { full_name: 'Bijan Robinson', position: 'RB', team: 'ATL' },
@@ -49,4 +49,21 @@ test('weekly recap picks out the week\'s standouts', () => {
   assert.match(text, /1\. Alpha 4-0[\s\S]*4\. Delta 1-3/);
   assert.ok(text.length < 1000);
   assert.equal(weeklyRecap(7, [{ roster_id: 1, points: 0 }], rosters, {}, players), null);
+});
+
+test('player updates show the blurb and trimmed analysis without HTML', () => {
+  const text = playerUpdateText('Jared Goff (QB, DET)', {
+    headline: 'Goff completed 19 of 30 passes for 271 yards.',
+    story: '<p>The Lions&#39; offense &amp; Goff broke out.</p> <p>' + 'More detail. '.repeat(80) + '</p>',
+  });
+  assert.match(text, /^📰 \*\*Jared Goff \(QB, DET\)\*\*\nGoff completed 19 of 30 passes for 271 yards\.\n> The Lions' offense & Goff broke out\. More detail\./);
+  assert.ok(text.endsWith('…') && text.length < 850);
+  assert.equal(playerUpdateText('X', { headline: 'Just a blurb.' }), '📰 **X**\nJust a blurb.');
+});
+
+test('player names match across Sleeper and ESPN spellings', () => {
+  assert.equal(nameKey('Kenneth Walker', 'RB'), nameKey('Kenneth Walker III', 'RB'));
+  assert.equal(nameKey('Aaron Jones', 'RB'), nameKey('Aaron Jones Sr.', 'RB'));
+  assert.equal(nameKey("Ja'Marr Chase", 'WR'), nameKey('JaMarr Chase', 'WR'));
+  assert.notEqual(nameKey('Josh Allen', 'QB'), nameKey('Josh Allen', 'LB'));
 });

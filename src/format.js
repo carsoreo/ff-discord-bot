@@ -4,6 +4,10 @@ export function teamName(roster, usersById) {
   return user.metadata?.team_name || user.display_name;
 }
 
+// Matches players across Sleeper and ESPN, which spell suffixes differently ("Kenneth Walker" vs "Kenneth Walker III").
+export const nameKey = (name, position) =>
+  `${(name ?? '').toLowerCase().replace(/\b(jr|sr|ii|iii|iv|v)\b\.?/g, '').replace(/[^a-z]/g, '')}|${position}`;
+
 export function playerName(players, id) {
   const p = players[id];
   if (!p) return id;
@@ -35,6 +39,16 @@ export function tradeBlockText(name, entries, players) {
   if (!entries.length) return `🏷️ **${name}** has nothing on the trade block.`;
   const lines = entries.map((e) => `• ${playerName(players, e.id)}${e.asking ? ` (asking: ${e.asking})` : ''}`);
   return `🏷️ **${name}** trade block:\n${lines.join('\n')}`;
+}
+
+const plain = (html) => (html ?? '')
+  .replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"')
+  .replace(/&#0?39;|&rsquo;|&lsquo;/g, "'").replace(/\s+/g, ' ').trim();
+
+export function playerUpdateText(name, item) {
+  const analysis = plain(item.story);
+  const short = analysis.length > 700 ? `${analysis.slice(0, 700).replace(/\s+\S*$/, '')}…` : analysis;
+  return `📰 **${name}**\n${plain(item.headline)}${short ? `\n> ${short}` : ''}`;
 }
 
 export function weeklyRecap(week, matchups, rosters, names, players) {

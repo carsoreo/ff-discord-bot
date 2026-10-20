@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { Client, GatewayIntentBits, ChannelType, Events, MessageFlags, SlashCommandBuilder } from 'discord.js';
-import { get, getPlayers, getNews } from './sleeper.js';
-import { teamName, playerName, describeTransaction, tradeBlockText, weeklyRecap } from './format.js';
+import { get, getPlayers, getPlayerNews, getEspnIds } from './sleeper.js';
+import { teamName, playerName, nameKey, describeTransaction, tradeBlockText, weeklyRecap, playerUpdateText } from './format.js';
 
 for (const key of ['DISCORD_TOKEN', 'GUILD_ID', 'LEAGUE_ID']) {
   if (!process.env[key]) throw new Error(`Missing ${key} in .env (see .env.example)`);
@@ -132,28 +132,33 @@ async function postWeeklyRecap() {
 }
 
 async function pollNews() {
-  const first = !state.seenNews;
   state.seenNews ??= [];
+  state.newsPlayers ??= {}; // players whose news backlog has been recorded
+  const seen = new Set(state.seenNews);
   const players = await getPlayers();
-  const espnToSleeper = {};
-  for (const [id, p] of Object.entries(players)) if (p.espn_id) espnToSleeper[p.espn_id] = id;
-  // Some players have no espn_id in Sleeper's data, so fall back to the name ESPN tags them with.
-  const nameToRostered = {};
-  for (const pid of Object.keys(league.ownerOf)) if (players[pid]?.full_name) nameToRostered[players[pid].full_name.toLowerCase()] = pid;
-  const toSleeper = (c) => espnToSleeper[c.athleteId] ?? nameToRostered[c.description?.toLowerCase()];
-
-  for (const a of await getNews()) {
-    if (state.seenNews.includes(a.id)) continue;
-    state.seenNews.push(a.id);
-    if (first) continue;
-    const pids = a.categories.filter((c) => c.type === 'athlete').map(toSleeper).filter((p) => p in league.ownerOf);
-    for (const rid of new Set(pids.map((p) => league.ownerOf[p]))) {
-      const who = pids.filter((p) => league.ownerOf[p] === rid).map((p) => playerName(players, p)).join(', ');
-      await send(state.channels.teams[rid].news, `📰 **${who}**: ${a.headline}\n${a.links?.web?.href ?? ''}`);
+  const espnIds = await getEspnIds((await get('/state/nfl')).season).catch((err) => (console.error(err.message), {}));
+  for (const [pid, rid] of Object.entries(league.ownerOf)) {
+    const p = players[pid];
+    const espnId = p?.espn_id ?? espnIds[nameKey(p?.full_name, p?.position)];
+    if (!espnId) continue; // team defenses, and anyone ESPN's list doesn't have
+    let items;
+    try {
+      items = await getPlayerNews(espnId);
+    } catch (err) {
+      console.error(err.message);
+      continue;
     }
+    // First look at a player (new to a roster): remember their backlog instead of posting it.
+    const post = state.newsPlayers[pid];
+    for (const item of items) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      state.seenNews.push(item.id);
+      if (post) await send(state.channels.teams[rid].news, playerUpdateText(playerName(players, pid), item));
+    }
+    state.newsPlayers[pid] = true;
   }
-
-  state.seenNews = state.seenNews.slice(-300);
+  state.seenNews = state.seenNews.slice(-3000); // ~5 items per rostered player
 
   // shortcut: injury changes only show up when the daily player map refreshes; ESPN news usually covers them sooner.
   for (const [pid, rid] of Object.entries(league.ownerOf)) {
@@ -250,7 +255,7 @@ client.once(Events.ClientReady, async () => {
   await refreshLeague(guild);
   console.log(`Logged in as ${client.user.tag}, tracking ${league.rosters.length} teams`);
   every(2 * 60 * 1000, async () => { await refreshLeague(guild); await pollTransactions(); await postWeeklyRecap(); });
-  every(2 * 60 * 1000, pollNews);
+  every(10 * 60 * 1000, pollNews); // one ESPN request per rostered player
 });
 
 client.login(DISCORD_TOKEN);

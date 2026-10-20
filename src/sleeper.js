@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { nameKey } from './format.js';
 
 const BASE = 'https://api.sleeper.app/v1';
 const PLAYERS_FILE = 'data/players.json';
@@ -28,9 +29,27 @@ export async function getPlayers() {
   return players;
 }
 
-// shortcut: ESPN's news feed is public but undocumented and may change; swap in a paid feed if it breaks.
-export async function getNews() {
-  const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=50');
-  if (!res.ok) throw new Error(`ESPN news: HTTP ${res.status}`);
-  return (await res.json()).articles ?? [];
+let espnIds; // { at, byKey }
+const ESPN_POSITION = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K' };
+
+// Sleeper's player data has no ESPN id for many players, so the rest are matched by name and position
+// against ESPN's fantasy player list. Refreshed daily.
+export async function getEspnIds(season) {
+  if (espnIds && Date.now() - espnIds.at < DAY) return espnIds.byKey;
+  const res = await fetch(`https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}/players?view=players_wl`, {
+    headers: { 'X-Fantasy-Filter': JSON.stringify({ filterActive: { value: true } }) },
+  });
+  if (!res.ok) throw new Error(`ESPN player list: HTTP ${res.status}`);
+  const byKey = {};
+  for (const p of await res.json()) if (ESPN_POSITION[p.defaultPositionId]) byKey[nameKey(p.fullName, ESPN_POSITION[p.defaultPositionId])] = p.id;
+  espnIds = { at: Date.now(), byKey };
+  return byKey;
+}
+
+// shortcut: ESPN's fantasy news API is public but undocumented and may change without notice.
+export async function getPlayerNews(espnId) {
+  const res = await fetch(`https://site.api.espn.com/apis/fantasy/v2/games/ffl/news/players?playerId=${espnId}&limit=5`);
+  if (!res.ok) throw new Error(`ESPN news for ${espnId}: HTTP ${res.status}`);
+  // "Rotowire" items are the short player updates Sleeper shows; "Story" and "Media" are articles and videos.
+  return ((await res.json()).feed ?? []).filter((item) => item.type === 'Rotowire');
 }
