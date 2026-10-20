@@ -1,0 +1,12 @@
+{
+  "name": "ff-discord-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env src/bot.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0"
+  }
+}
