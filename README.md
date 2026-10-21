@@ -14,7 +14,7 @@ It runs 24/7 on a free Oracle Cloud server, so nobody's computer has to stay on.
 - **Transactions.** Completed trades (players, draft picks, FAAB), waiver claims (with the winning bid), free-agent pickups and commissioner moves are posted to `#transactions` and to each involved team's `#team-moves`. Checked every 2 minutes.
 - **Player news.** Short fantasy updates from ESPN's free fantasy news API (the same Rotowire-written blurbs the Sleeper app shows, no opinion articles), plus injury status changes, go to the `#player-news` of whichever team rosters the player. Checked every 10 minutes.
 - **Trade block.**
-  - `/link sleeper_username` connects your Discord account to your Sleeper team.
+  - `/link sleeper_username` connects your Discord account to your Sleeper team, and the bot @mentions you in your team's `#team-moves` so you can find your channels.
   - `/tradeblock add|remove|clear` manages your trade block. Player names autocomplete from your roster, and you can add what you're asking for.
   - Each team keeps one message in `#trade-block`. Players come off the block on their own once they're traded or dropped.
 

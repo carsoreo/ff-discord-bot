@@ -220,9 +220,18 @@ async function handleCommand(i) {
     const user = await get(`/user/${encodeURIComponent(username)}`);
     const roster = user && league.rosters.find((r) => r.owner_id === user.user_id || r.co_owners?.includes(user.user_id));
     if (!roster) return reply(`No team in this league belongs to Sleeper user \`${username}\`. Join the league on Sleeper first.`);
+    const isNew = state.links[i.user.id] !== roster.roster_id; // re-running /link for the same team doesn't ping again
     state.links[i.user.id] = roster.roster_id;
     save();
-    return reply(`Linked you to **${league.names[roster.roster_id]}**.`);
+    const { moves, news } = state.channels.teams[roster.roster_id];
+    const name = league.names[roster.roster_id];
+    if (isNew) {
+      await client.channels.cache.get(moves)?.send({
+        content: `👋 <@${i.user.id}>, welcome to **${name}**! This is your team's corner of the server:\n• <#${moves}>: your trades, waiver claims and pickups\n• <#${news}>: news and injury updates for your players`,
+        allowedMentions: { users: [i.user.id] },
+      });
+    }
+    return reply(`Linked you to **${name}**. Your channels: <#${moves}> and <#${news}>.`);
   }
 
   const rid = state.links[i.user.id];
