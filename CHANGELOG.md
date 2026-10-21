@@ -2,6 +2,10 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.2.0 (2026-10-21)
+
+- `#welcome` is read-only: members can read and react, only the bot posts. Needs the **Manage Roles** permission.
+
 ## 1.1.0 (2026-10-21)
 
 - `/link` gives the member the server's **Manager** role, and the Sleeper commissioner also gets **Commissioner**. The bot uses roles you create yourself (matched by name) and needs the **Manage Roles** permission.

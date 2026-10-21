@@ -7,7 +7,7 @@ It runs 24/7 on a free Oracle Cloud server, so nobody's computer has to stay on.
 ## What it does
 
 ### Discord
-- **Channels for every team.** A **League** category holds `#welcome` (setup steps for new members, kept up to date by the bot), `#transactions` and `#trade-block`. Each Sleeper team gets its own category, named after the team, with:
+- **Channels for every team.** A **League** category holds `#welcome` (read-only setup steps for new members, kept up to date by the bot), `#transactions` and `#trade-block`. Each Sleeper team gets its own category, named after the team, with:
   - `#team-moves`: that team's trades, waiver claims and pickups
   - `#player-news`: short updates and injury changes for that team's players
 - **New owners.** Unclaimed teams show up as "Open Team N". When someone joins the league on Sleeper and claims a team, its category is renamed and the bot welcomes them.

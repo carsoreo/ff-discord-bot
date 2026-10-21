@@ -81,6 +81,10 @@ let roles = {};
 async function ensureRoles(guild) {
   const me = await guild.members.fetchMe();
   if (!me.permissions.has(PermissionFlagsBits.ManageRoles)) return console.log('Roles: off until the bot has the Manage Roles permission');
+  // #welcome is read-only: members can read and react, only the bot posts.
+  const welcome = guild.channels.cache.get(state.channels.welcome);
+  await welcome?.permissionOverwrites.edit(guild.roles.everyone, { SendMessages: false, SendMessagesInThreads: false, CreatePublicThreads: false, CreatePrivateThreads: false });
+  await welcome?.permissionOverwrites.edit(me, { SendMessages: true });
   const named = (name) => guild.roles.cache.find((r) => r.name.toLowerCase() === name)?.id;
   roles = { commissioner: named('commissioner'), manager: named('manager') };
   for (const discordId of Object.keys(state.links)) await syncRoles(guild, discordId);
