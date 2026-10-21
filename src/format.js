@@ -51,39 +51,27 @@ export function playerUpdateText(name, item) {
   return `📰 **${name}**\n${plain(item.headline)}${short ? `\n> ${short}` : ''}`;
 }
 
-export function weeklyRecap(week, matchups, rosters, names, players) {
-  const scored = matchups.filter((m) => m.points > 0);
-  if (!scored.length) return null; // empty rosters or no games yet
+// The same week shape from either league source: { week, games: [[{ name, points }, …]], starters: [{ name, team, points }] }.
+export function sleeperWeek(week, matchups, names, players) {
   const name = (rid) => names[rid] ?? `Team ${rid}`;
+  const games = Object.values(Object.groupBy(matchups.filter((m) => m.matchup_id), (m) => m.matchup_id))
+    .map((g) => g.map((m) => ({ name: name(m.roster_id), points: m.points ?? 0 })));
+  const starters = matchups.flatMap((m) => (m.starters ?? [])
+    .filter((p) => p !== '0') // Sleeper's placeholder for an empty starting slot
+    .map((p) => ({ name: playerName(players, p), team: name(m.roster_id), points: m.players_points?.[p] ?? 0 })));
+  return { week, games, starters };
+}
+
+export function weeklyRecap({ week, games, starters }) {
+  if (!starters.some((s) => s.points > 0)) return null; // empty rosters or no games yet
   const pts = (n) => n.toFixed(2);
-  const games = Object.values(Object.groupBy(scored.filter((m) => m.matchup_id), (m) => m.matchup_id))
-    .filter((g) => g.length === 2)
-    .map((g) => g.toSorted((a, b) => b.points - a.points));
-  const lines = [`🏈 Week ${week} recap`];
-  for (const [w, l] of games) lines.push(`${name(w.roster_id)} ${pts(w.points)} ${w.points === l.points ? 'tied' : 'def.'} ${name(l.roster_id)} ${pts(l.points)}`);
-
-  const byPoints = scored.toSorted((a, b) => b.points - a.points);
-  lines.push('', `🔥 High score: ${name(byPoints[0].roster_id)} (${pts(byPoints[0].points)})`);
-  lines.push(`🧊 Low score: ${name(byPoints.at(-1).roster_id)} (${pts(byPoints.at(-1).points)})`);
-  if (games.length) {
-    const byMargin = games.toSorted((a, b) => (a[0].points - a[1].points) - (b[0].points - b[1].points));
-    const [close, blowout] = [byMargin[0], byMargin.at(-1)];
-    lines.push(`😬 Closest game: ${name(close[0].roster_id)} by ${pts(close[0].points - close[1].points)}`);
-    lines.push(`💥 Biggest blowout: ${name(blowout[0].roster_id)} by ${pts(blowout[0].points - blowout[1].points)}`);
+  const lines = [`🏈 Week ${week} recap`, '', '🔥 Top scorers:'];
+  starters.toSorted((a, b) => b.points - a.points).slice(0, 3)
+    .forEach((s, i) => lines.push(`${i + 1}. ${s.name}: ${pts(s.points)} for ${s.team}`));
+  const played = games.filter((g) => g.length === 2).map((g) => g.toSorted((a, b) => b.points - a.points));
+  if (played.length) {
+    const [w, l] = played.toSorted((a, b) => (b[0].points - b[1].points) - (a[0].points - a[1].points))[0];
+    lines.push('', `💥 Biggest blowout: ${w.name} beat ${l.name} by ${pts(w.points - l.points)} (${pts(w.points)} to ${pts(l.points)})`);
   }
-  let mvp;
-  for (const m of scored) {
-    for (const p of m.starters ?? []) {
-      const v = m.players_points?.[p] ?? 0;
-      if (!mvp || v > mvp.v) mvp = { p, v, rid: m.roster_id };
-    }
-  }
-  if (mvp) lines.push(`⭐ MVP: ${playerName(players, mvp.p)} for ${name(mvp.rid)} (${pts(mvp.v)})`);
-
-  // Top 3 and last place keep the post under GroupMe's 1000-char limit.
-  const pf = (r) => (r.settings.fpts ?? 0) + (r.settings.fpts_decimal ?? 0) / 100;
-  const standings = rosters.toSorted((a, b) => (b.settings.wins - a.settings.wins) || (pf(b) - pf(a)));
-  const row = (r) => `${standings.indexOf(r) + 1}. ${name(r.roster_id)} ${r.settings.wins}-${r.settings.losses}${r.settings.ties ? `-${r.settings.ties}` : ''}`;
-  lines.push('', 'Standings:', ...standings.slice(0, 3).map(row), `…`, row(standings.at(-1)));
   return lines.join('\n');
 }

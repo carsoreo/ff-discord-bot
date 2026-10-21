@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import { Client, GatewayIntentBits, ChannelType, Events, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { get, getPlayers, getPlayerNews, getEspnIds } from './sleeper.js';
-import { teamName, playerName, nameKey, describeTransaction, tradeBlockText, weeklyRecap, playerUpdateText } from './format.js';
+import { teamName, playerName, nameKey, describeTransaction, tradeBlockText, weeklyRecap, sleeperWeek, playerUpdateText } from './format.js';
+import { getYahooWeek } from './yahoo.js';
 
 for (const key of ['DISCORD_TOKEN', 'GUILD_ID', 'LEAGUE_ID']) {
   if (!process.env[key]) throw new Error(`Missing ${key} in .env (see .env.example)`);
@@ -118,16 +119,22 @@ async function pollTransactions() {
   save();
 }
 
-// Once a week's games are final (Sleeper's week has moved on), post its recap to GroupMe.
+// Once a week's games are final, post its top scorers and biggest blowout to GroupMe.
+// Reads the Yahoo league while YAHOO_LEAGUE_ID is set, otherwise the Sleeper league.
 async function postWeeklyRecap() {
-  const nfl = await get('/state/nfl');
-  const week = nfl.week - 1;
-  const key = `${nfl.season}-${week}`;
-  if (!['regular', 'post'].includes(nfl.season_type) || week < 1 || state.recap === key) return;
-  const matchups = await get(`/league/${LEAGUE_ID}/matchups/${week}`);
-  const text = weeklyRecap(week, matchups, league.rosters, league.names, await getPlayers());
+  let data;
+  if (process.env.YAHOO_LEAGUE_ID) {
+    data = await getYahooWeek(process.env.YAHOO_LEAGUE_ID);
+  } else {
+    const nfl = await get('/state/nfl');
+    if (!['regular', 'post'].includes(nfl.season_type) || nfl.week < 2) return;
+    const week = nfl.week - 1;
+    data = { id: `sleeper-${nfl.season}-${week}`, ...sleeperWeek(week, await get(`/league/${LEAGUE_ID}/matchups/${week}`), league.names, await getPlayers()) };
+  }
+  if (!data || state.recap === data.id) return;
+  const text = weeklyRecap(data);
   if (text) await groupme(text);
-  state.recap = key;
+  state.recap = data.id;
   save();
 }
 
@@ -254,7 +261,8 @@ client.once(Events.ClientReady, async () => {
   await guild.commands.set(commands.map((c) => c.toJSON()));
   await refreshLeague(guild);
   console.log(`Logged in as ${client.user.tag}, tracking ${league.rosters.length} teams`);
-  every(2 * 60 * 1000, async () => { await refreshLeague(guild); await pollTransactions(); await postWeeklyRecap(); });
+  every(2 * 60 * 1000, async () => { await refreshLeague(guild); await pollTransactions(); });
+  every(60 * 60 * 1000, postWeeklyRecap); // hourly: a recap only changes once a week
   every(10 * 60 * 1000, pollNews); // one ESPN request per rostered player
 });
 
