@@ -9,10 +9,12 @@ Discord bot for my fantasy football league (Sleeper).
 - Posts completed trades, waiver claims (with FAAB bid) and free-agent moves to `#transactions` and to each involved team's `#team-moves`. Polls every 2 minutes.
 - Posts short player updates from ESPN's free fantasy news API (the same Rotowire-written blurbs Sleeper shows, no articles) and injury status changes to the `#player-news` of the team that rosters the player. Polls every 10 minutes.
 - `/link sleeper_username` connects your Discord account to your team.
-- Optional: set `GROUPME_BOT_ID` (from https://dev.groupme.com/bots) to post trades and a weekly recap (top 3 scorers and the biggest blowout) to a GroupMe chat. The recap reads a Yahoo league while `YAHOO_LEAGUE_ID` is set, otherwise the Sleeper league.
+- Optional: set `GROUPME_BOT_ID` (from https://dev.groupme.com/bots) to post a "🚨🚨 A NEW TRADE IS PENDING 🚨🚨" alert when a trade appears (no details) and a weekly recap (top 3 scorers, highest-scoring team, bum of the week, biggest blowout, standings) to a GroupMe chat. The recap reads a Yahoo league while `YAHOO_LEAGUE_ID` is set, otherwise the Sleeper league.
 - `/tradeblock add|remove|clear` keeps one message per team in `#trade-block`. Players come off the block on their own once they're traded or dropped.
 
 On the first run the bot records past transactions and news as seen without posting them.
+
+`npm run recap -- [week] [leagueId]` prints a week's top 3 scorers, highest-scoring team, bum of the week (lowest), biggest blowout and standings from Sleeper without posting anything. It defaults to the last finished week of `LEAGUE_ID`.
 
 ## Setup
 

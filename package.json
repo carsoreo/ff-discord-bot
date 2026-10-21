@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node --env-file=.env src/bot.js",
     "test": "node --test",
-    "yahoo-auth": "node --env-file=.env scripts/yahoo-auth.js"
+    "yahoo-auth": "node --env-file=.env scripts/yahoo-auth.js",
+    "recap": "node --env-file=.env scripts/recap.js"
   },
   "dependencies": {
     "discord.js": "^14.27.0"

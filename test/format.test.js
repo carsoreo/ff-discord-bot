@@ -39,15 +39,22 @@ test('weekly recap shows the top 3 scorers and the biggest blowout', () => {
     { roster_id: 3, matchup_id: 2, points: 101, starters: ['3'], players_points: { 3: 25 } },
     { roster_id: 4, matchup_id: 2, points: 99.5, starters: [], players_points: {} },
   ];
-  const text = weeklyRecap(sleeperWeek(7, matchups, { 1: 'Alpha', 2: 'Bravo', 3: 'Charlie', 4: 'Delta' }, players));
+  const rosters = [[1, 5, 1, 700.5], [2, 3, 3, 610], [3, 5, 1, 720], [4, 0, 6, 500]]
+    .map(([roster_id, wins, losses, fpts]) => ({ roster_id, settings: { wins, losses, fpts: Math.trunc(fpts), fpts_decimal: Math.round((fpts % 1) * 100) } }));
+  const text = weeklyRecap(sleeperWeek(7, matchups, { 1: 'Alpha', 2: 'Bravo', 3: 'Charlie', 4: 'Delta' }, players, rosters));
   assert.equal(text, [
     '🏈 Week 7 recap', '', '🔥 Top scorers:',
     '1. Bijan Robinson (RB, ATL): 31.20 for Alpha',
     '2. Chicago Bears (DEF, CHI): 25.00 for Charlie',
     '3. Puka Nacua (WR, LAR): 12.00 for Bravo',
+    '', '📈 Most points: Alpha (120.50)', '😂😂 BUM OF THE WEEK: Bravo (80.25) 😂😂',
     '', '💥 Biggest blowout: Alpha beat Bravo by 40.25 (120.50 to 80.25)',
+    '', '🏆 Standings:', '1. Charlie 5-1 (720.00)', '2. Alpha 5-1 (700.50)', '3. Bravo 3-3 (610.00)', '4. Delta 0-6 (500.00)',
   ].join('\n'));
   assert.equal(weeklyRecap(sleeperWeek(7, [{ roster_id: 1, matchup_id: 1, points: 0, starters: [] }], {}, players)), null);
+  // A commissioner's score override wins over the computed score.
+  const edited = sleeperWeek(7, [{ ...matchups[0], custom_points: 90 }, matchups[1]], {}, players);
+  assert.deepEqual(edited.games[0].map((t) => t.points), [90, 80.25]);
 });
 
 test("Yahoo's nested JSON flattens into games and starters", () => {

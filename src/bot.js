@@ -27,7 +27,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const send = (channelId, content) =>
   client.channels.cache.get(channelId)?.send({ content, allowedMentions: { parse: [] } });
 
-// Posts trades and weekly recaps to GroupMe when GROUPME_BOT_ID is set. GroupMe has no markdown and caps posts at 1000 chars.
+// Posts trade alerts and weekly recaps to GroupMe when GROUPME_BOT_ID is set. GroupMe has no markdown and caps posts at 1000 chars.
 async function groupme(text) {
   if (!process.env.GROUPME_BOT_ID) return;
   const res = await fetch('https://api.groupme.com/v3/bots/post', {
@@ -107,13 +107,19 @@ async function pollTransactions() {
   const rounds = round > 1 ? [round - 1, round] : [round];
   const txs = (await Promise.all(rounds.map((r) => get(`/league/${LEAGUE_ID}/transactions/${r}`)))).flat();
   const players = await getPlayers();
+  const firstAlert = !state.alertedTrades;
+  state.alertedTrades ??= [];
   for (const tx of txs.sort((a, b) => a.status_updated - b.status_updated)) {
+    // GroupMe only hears that a trade exists, the moment it shows up; players post the details themselves.
+    if (tx.type === 'trade' && tx.status !== 'failed' && !state.alertedTrades.includes(tx.transaction_id)) {
+      state.alertedTrades.push(tx.transaction_id);
+      if (!firstAlert) await groupme('🚨🚨 A NEW TRADE IS PENDING 🚨🚨');
+    }
     if (tx.status !== 'complete' || seen.has(tx.transaction_id)) continue;
     state.seenTx.push(tx.transaction_id);
     if (first) continue;
     const text = describeTransaction(tx, players, league.names);
     await send(state.channels.transactions, text);
-    if (tx.type === 'trade') await groupme(text);
     for (const rid of tx.roster_ids) await send(state.channels.teams[rid].moves, text);
   }
   save();
@@ -129,7 +135,7 @@ async function postWeeklyRecap() {
     const nfl = await get('/state/nfl');
     if (!['regular', 'post'].includes(nfl.season_type) || nfl.week < 2) return;
     const week = nfl.week - 1;
-    data = { id: `sleeper-${nfl.season}-${week}`, ...sleeperWeek(week, await get(`/league/${LEAGUE_ID}/matchups/${week}`), league.names, await getPlayers()) };
+    data = { id: `sleeper-${nfl.season}-${week}`, ...sleeperWeek(week, await get(`/league/${LEAGUE_ID}/matchups/${week}`), league.names, await getPlayers(), league.rosters) };
   }
   if (!data || state.recap === data.id) return;
   const text = weeklyRecap(data);
