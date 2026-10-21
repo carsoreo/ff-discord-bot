@@ -43,7 +43,7 @@ export function welcomeText(leagueName, channels) {
     'Ask the commissioner for the Sleeper invite link, then claim an open team. Your team gets its own category here, renamed to your team name automatically.',
     '',
     '**2. Link your Discord account**',
-    'Type `/link` with your Sleeper username. The bot tags you in your team's channel so you can find it, and you need it for the trade block. You only need to do this once.',
+    "Type `/link` with your Sleeper username. The bot tags you in your team's channel so you can find it, and you need it for the trade block. You only need to do this once.",
     '',
     '**3. Use the trade block**',
     '`/tradeblock add`: put a player on your block. Names autocomplete from your roster, and you can say what you want back.',
