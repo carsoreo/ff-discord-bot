@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { describeTransaction, teamName, weeklyRecap, sleeperWeek, playerUpdateText, nameKey } from '../src/format.js';
+import { describeTransaction, teamName, weeklyRecap, sleeperWeek, playerUpdateText, nameKey, welcomeText } from '../src/format.js';
 import { flatten, yahooGames, yahooStarters } from '../src/yahoo.js';
 
 const players = {
@@ -86,4 +86,12 @@ test('player names match across Sleeper and ESPN spellings', () => {
   assert.equal(nameKey('Aaron Jones', 'RB'), nameKey('Aaron Jones Sr.', 'RB'));
   assert.equal(nameKey("Ja'Marr Chase", 'WR'), nameKey('JaMarr Chase', 'WR'));
   assert.notEqual(nameKey('Josh Allen', 'QB'), nameKey('Josh Allen', 'LB'));
+});
+
+test('welcome message names the league and links the shared channels', () => {
+  const text = welcomeText('The Boys', { tradeBlock: '111', transactions: '222' });
+  assert.match(text, /^👋 \*\*Welcome to The Boys!\*\*/);
+  assert.match(text, /<#111>/);
+  assert.match(text, /<#222>/);
+  assert.ok(text.length < 2000); // Discord's message limit
 });

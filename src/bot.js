@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { Client, GatewayIntentBits, ChannelType, Events, MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { get, getPlayers, getPlayerNews, getEspnIds } from './sleeper.js';
-import { teamName, playerName, nameKey, describeTransaction, tradeBlockText, weeklyRecap, sleeperWeek, playerUpdateText } from './format.js';
+import { teamName, playerName, nameKey, describeTransaction, tradeBlockText, weeklyRecap, sleeperWeek, playerUpdateText, welcomeText } from './format.js';
 import { getYahooWeek } from './yahoo.js';
 
 for (const key of ['DISCORD_TOKEN', 'GUILD_ID', 'LEAGUE_ID']) {
@@ -52,6 +52,7 @@ async function ensureChannels(guild) {
   }
   const category = { type: ChannelType.GuildCategory };
   c.category = await sync(c.category, 'League', category);
+  c.welcome = await sync(c.welcome, 'welcome', { parent: c.category, position: 0, topic: 'Start here: how to set up your team' });
   c.transactions = await sync(c.transactions, 'transactions', { parent: c.category });
   c.tradeBlock = await sync(c.tradeBlock, 'trade-block', { parent: c.category });
   for (const r of league.rosters) {
@@ -71,6 +72,18 @@ async function postTradeBlock(rid) {
   const content = tradeBlockText(league.names[rid], state.blocks[rid] ?? [], await getPlayers());
   const msg = await ch.send({ content, allowedMentions: { parse: [] } });
   state.blockMsgs[rid] = msg.id;
+  save();
+}
+
+// One message in #welcome with setup steps, edited in place when the text changes.
+async function postWelcome() {
+  const content = welcomeText((await get(`/league/${LEAGUE_ID}`)).name, state.channels);
+  if (state.welcomeText === content) return;
+  const ch = client.channels.cache.get(state.channels.welcome);
+  const old = state.welcomeMsg && (await ch.messages.fetch(state.welcomeMsg).catch(() => null));
+  const msg = old ? await old.edit({ content }) : await ch.send({ content, allowedMentions: { parse: [] } });
+  state.welcomeMsg = msg.id;
+  state.welcomeText = content;
   save();
 }
 
@@ -266,6 +279,7 @@ client.once(Events.ClientReady, async () => {
   const guild = await client.guilds.fetch(GUILD_ID);
   await guild.commands.set(commands.map((c) => c.toJSON()));
   await refreshLeague(guild);
+  await postWelcome();
   console.log(`Logged in as ${client.user.tag}, tracking ${league.rosters.length} teams`);
   every(2 * 60 * 1000, async () => { await refreshLeague(guild); await pollTransactions(); });
   every(60 * 60 * 1000, postWeeklyRecap); // hourly: a recap only changes once a week

@@ -35,6 +35,29 @@ export function describeTransaction(tx, players, names) {
   return `${LABEL[tx.type] ?? tx.type}${bid}\n${lines.join('\n')}`;
 }
 
+export function welcomeText(leagueName, channels) {
+  return [
+    `👋 **Welcome to ${leagueName}!** Here's how to get your team set up with the bot.`,
+    '',
+    '**1. Join the league on Sleeper**',
+    'Ask the commissioner for the Sleeper invite link, then claim an open team. Your team gets its own category here, renamed to your team name automatically.',
+    '',
+    '**2. Link your Discord account**',
+    'Type `/link` with your Sleeper username. You only need to do this once, and you need it for the trade block.',
+    '',
+    '**3. Use the trade block**',
+    '`/tradeblock add`: put a player on your block. Names autocomplete from your roster, and you can say what you want back.',
+    '`/tradeblock remove`: take a player off.',
+    '`/tradeblock clear`: empty your block.',
+    `Your block shows in <#${channels.tradeBlock}>, and players come off automatically when they're traded or dropped.`,
+    '',
+    '**Where things get posted**',
+    `• <#${channels.transactions}>: every trade, waiver claim and pickup in the league`,
+    "• **#team-moves** in your team's category: your team's moves",
+    "• **#player-news** in your team's category: news and injury updates for your players",
+  ].join('\n');
+}
+
 export function tradeBlockText(name, entries, players) {
   if (!entries.length) return `🏷️ **${name}** has nothing on the trade block.`;
   const lines = entries.map((e) => `• ${playerName(players, e.id)}${e.asking ? ` (asking: ${e.asking})` : ''}`);
