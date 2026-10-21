@@ -289,7 +289,8 @@ client.once(Events.ClientReady, async () => {
   await guild.commands.set(commands.map((c) => c.toJSON()));
   await refreshLeague(guild);
   await postWelcome();
-  console.log(`Logged in as ${client.user.tag}, tracking ${league.rosters.length} teams`);
+  const { version } = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  console.log(`CO Fantasy Bot v${version}: logged in as ${client.user.tag}, tracking ${league.rosters.length} teams`);
   every(2 * 60 * 1000, async () => { await refreshLeague(guild); await pollTransactions(); });
   every(60 * 60 * 1000, postWeeklyRecap); // hourly: a recap only changes once a week
   every(10 * 60 * 1000, pollNews); // one ESPN request per rostered player

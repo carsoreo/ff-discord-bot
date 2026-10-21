@@ -140,6 +140,21 @@ ssh -i ~/.ssh/oracle_ff_bot ubuntu@SERVER_IP "cd ff-discord-bot && git pull && n
 ssh -i ~/.ssh/oracle_ff_bot ubuntu@SERVER_IP "pm2 restart ff-bot --update-env"
 ```
 
+## Versions and releases
+
+The bot uses [semantic versioning](https://semver.org): **major.minor.patch**. The version lives in `package.json`, the server prints it on startup (`CO Fantasy Bot v1.0.0: logged in as …`), and every release has a git tag and an entry in [CHANGELOG.md](CHANGELOG.md).
+
+- **patch** (1.0.0 → 1.0.1): bug fixes and wording tweaks
+- **minor** (1.0.0 → 1.1.0): new features that don't change how anything is set up
+- **major** (1.0.0 → 2.0.0): changes that need setup work, like new required `.env` settings or renamed channels
+
+To release, add the changes to `CHANGELOG.md`, commit, then:
+```bash
+npm version minor          # or patch / major: bumps package.json, commits, and tags vX.Y.Z
+git push --follow-tags
+```
+Then deploy to the server as above, and check the startup line shows the new version.
+
 ## Yahoo recaps (optional, waiting on Yahoo)
 
 The weekly recap can read a Yahoo league instead of Sleeper. **As of 2026 Yahoo only serves fantasy data to apps it has approved**; self-serve apps get `403 This application is not authorized`. Apply at https://sports.yahoo.com/developer/access/ first.
