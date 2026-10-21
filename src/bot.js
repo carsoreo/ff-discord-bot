@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { Client, GatewayIntentBits, ChannelType, Events, MessageFlags, SlashCommandBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, ChannelType, Events, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { get, getPlayers, getPlayerNews, getEspnIds } from './sleeper.js';
 import { teamName, playerName, nameKey, describeTransaction, tradeBlockText, weeklyRecap, sleeperWeek, playerUpdateText, welcomeText } from './format.js';
 import { getYahooWeek } from './yahoo.js';
@@ -73,6 +73,29 @@ async function postTradeBlock(rid) {
   const msg = await ch.send({ content, allowedMentions: { parse: [] } });
   state.blockMsgs[rid] = msg.id;
   save();
+}
+
+// The server's own "Commissioner" and "Manager" roles, matched by name; the bot only hands them out.
+let roles = {};
+
+async function ensureRoles(guild) {
+  const me = await guild.members.fetchMe();
+  if (!me.permissions.has(PermissionFlagsBits.ManageRoles)) return console.log('Roles: off until the bot has the Manage Roles permission');
+  const named = (name) => guild.roles.cache.find((r) => r.name.toLowerCase() === name)?.id;
+  roles = { commissioner: named('commissioner'), manager: named('manager') };
+  for (const discordId of Object.keys(state.links)) await syncRoles(guild, discordId);
+}
+
+// Linked members get Manager; the Sleeper commissioner also gets Commissioner.
+// shortcut: roles are only ever added, so someone who leaves the league keeps theirs until removed by hand.
+async function syncRoles(guild, discordId) {
+  const roster = league.rosters.find((r) => r.roster_id === state.links[discordId]);
+  const member = roster && roles.manager && (await guild.members.fetch(discordId).catch(() => null));
+  if (!member) return;
+  const want = [roles.manager];
+  if (league.usersById[roster.owner_id]?.is_owner) want.push(roles.commissioner);
+  const missing = want.filter((id) => id && !member.roles.cache.has(id));
+  if (missing.length) await member.roles.add(missing, 'Linked to a Sleeper team');
 }
 
 // One message in #welcome with setup steps, edited in place when the text changes.
@@ -223,6 +246,7 @@ async function handleCommand(i) {
     const isNew = state.links[i.user.id] !== roster.roster_id; // re-running /link for the same team doesn't ping again
     state.links[i.user.id] = roster.roster_id;
     save();
+    await syncRoles(i.guild, i.user.id);
     const { moves, news } = state.channels.teams[roster.roster_id];
     const name = league.names[roster.roster_id];
     if (isNew) {
@@ -288,6 +312,7 @@ client.once(Events.ClientReady, async () => {
   const guild = await client.guilds.fetch(GUILD_ID);
   await guild.commands.set(commands.map((c) => c.toJSON()));
   await refreshLeague(guild);
+  await ensureRoles(guild);
   await postWelcome();
   const { version } = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   console.log(`CO Fantasy Bot v${version}: logged in as ${client.user.tag}, tracking ${league.rosters.length} teams`);

@@ -2,6 +2,12 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.1.0 (2026-10-21)
+
+- `/link` gives the member the server's **Manager** role, and the Sleeper commissioner also gets **Commissioner**. The bot uses roles you create yourself (matched by name) and needs the **Manage Roles** permission.
+- Members who linked before this release get their roles when the bot starts.
+- The `#welcome` message mentions the Manager role.
+
 ## 1.0.0 (2026-10-20)
 
 First versioned release: the bot as it runs in The Boys' Discord and on the Oracle server.
