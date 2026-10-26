@@ -1,5 +1,7 @@
 # ff-discord-bot
 
+[![test](https://github.com/carsoreo/ff-discord-bot/actions/workflows/test.yml/badge.svg)](https://github.com/carsoreo/ff-discord-bot/actions/workflows/test.yml)
+
 **CO Fantasy Bot** connects a [Sleeper](https://sleeper.com) fantasy football league to a Discord server and a GroupMe chat. Each team gets its own corner of Discord with its roster moves and news about its players. League-wide transactions and a trade block live in shared channels. GroupMe gets the fun stuff: trade alerts and a weekly recap.
 
 It runs 24/7 on a free Oracle Cloud server, so nobody's computer has to stay on.
