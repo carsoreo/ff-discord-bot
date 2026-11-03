@@ -49,6 +49,13 @@ test("Yahoo's keeper icon glyph in a drafted name still matches the lineups", ()
   assert.equal(playerStats(buildHistory([glyph]), lineups).drafts.bySeason[2024].points[2], 75);
 });
 
+test("a starter hidden behind Yahoo's Bye label gets the rest of the team score", () => {
+  const lu = structuredClone(lineups);
+  lu[2024][0].p[1][3] = null; // Ann week 1: Sleeper unknown; team scored 100 with Bust's 2
+  const s = playerStats(buildHistory([season]), lu);
+  assert.equal(s.drafts.bySeason[2024].points[3], 98 + 30 + 30);
+});
+
 test('no lineups means no player stats', () => {
   assert.equal(playerStats(buildHistory([season]), {}), null);
 });

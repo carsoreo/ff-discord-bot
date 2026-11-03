@@ -11,9 +11,20 @@ export function playerStats(history, lineups, top = 10) {
     const byId = Object.fromEntries(s.teams.map((t) => [t.id, t]));
     // Only weeks that count: the same finished weeks the scores use.
     const weeks = new Set(s.games.map((g) => g.week));
+    const score = {};
+    for (const g of s.games) for (const x of [g.a, g.b]) score[`${g.week}|${x.id}`] = x.points;
     for (const { w, t, p } of lineups[s.year] ?? []) {
       if (!weeks.has(w) || !byId[t]) continue;
-      for (const [, name, slot, points] of p) rows.push({ year: s.year, week: w, team: t, manager: byId[t].manager, name, slot, points, started: !BENCH.has(slot) });
+      // Yahoo hides some players' points behind a "Bye" label (null here). When one starter is the only unknown,
+      // the team's score gives his points exactly; any other unknown counts as 0.
+      const unknown = p.filter(([, , slot, pts]) => pts == null && !BENCH.has(slot));
+      const known = p.reduce((a, [, , slot, pts]) => a + (BENCH.has(slot) ? 0 : pts ?? 0), 0);
+      const fill = unknown.length === 1 && score[`${w}|${t}`] != null ? round2(score[`${w}|${t}`] - known) : null;
+      for (const row of p) {
+        const [, rawName, slot, pts] = row;
+        const points = pts ?? (row === unknown[0] && fill != null ? fill : 0);
+        rows.push({ year: s.year, week: w, team: t, manager: byId[t].manager, name: name(rawName), slot, points, started: !BENCH.has(slot) });
+      }
     }
   }
   if (!rows.length) return null;

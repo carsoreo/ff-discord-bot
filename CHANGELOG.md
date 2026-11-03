@@ -2,6 +2,11 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.5.3 (2026-11-03)
+
+- The lineup collector reads points by real column position. 2026 pages have an extra column, so every 2026 player's bye week was being read as his points.
+- Players Yahoo shows as "Bye" are saved as unknown. When a starter is the only unknown in a lineup, his points come from the team's score.
+
 ## 1.5.2 (2026-11-03)
 
 - Draft value counts a player's points that season on any roster, so a pick traded away is no longer a zero-point bust.

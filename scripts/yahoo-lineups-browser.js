@@ -26,14 +26,18 @@ const TEAMS = 10;
       if (have.has(`${w}:${t}`)) continue;
       console.log('reading', year, 'week', w, 'team', t);
       const d = await page(`/${year}/f1/${lid}/${t}/team?&week=${w}`);
+      // Read Fan Pts by real column position: cells can span columns (2026 added an Action column, and a "Bye"
+      // label spans Fan Pts and Proj Pts). A Bye label is saved as null; the site fills it from the team score.
+      const at = (cells, col) => { let c = 0; for (const el of cells) { const span = el.colSpan || 1; if (col < c + span) return el; c += span; } return null; };
       const p = [];
       for (const tb of d.querySelectorAll('#statTable0, #statTable1, #statTable2')) {
-        const head = [...(tb.querySelectorAll('thead tr')[1]?.children ?? [])].map((c) => clean(c.textContent));
-        const fi = head.indexOf('Fan Pts');
+        let col = 0, fan = -1;
+        for (const h of tb.querySelectorAll('thead tr')[1]?.children ?? []) { if (clean(h.textContent) === 'Fan Pts') fan = col; col += h.colSpan || 1; }
         for (const tr of tb.querySelectorAll('tbody tr')) {
           const a = tr.children[1]?.querySelector('a.name'); if (!a) continue;
           const pid = Number((a.getAttribute('href') ?? '').match(/(\d+)\/?$/)?.[1]) || null;
-          p.push([pid, clean(a.textContent), clean(tr.children[0].textContent), parseFloat(clean(tr.children[fi]?.textContent)) || 0]);
+          const txt = clean(at([...tr.children], fan)?.textContent);
+          p.push([pid, clean(a.textContent), clean(tr.children[0].textContent), /^-?\d+(\.\d+)?$/.test(txt) ? parseFloat(txt) : txt === '-' ? 0 : null]);
         }
       }
       rows.push({ w, t, p });
