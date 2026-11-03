@@ -150,7 +150,7 @@ const live = D.seasons.find((s) => !s.complete);
 document.title = `${D.league} Hall of Fame`;
 $('#title').textContent = D.league;
 $('#sub').innerHTML = `<b>Hall of Fame</b> · Est. ${D.seasons[0].year} · ${D.seasons.length} seasons · ${D.managers.length} managers`;
-$('#foot').textContent = `Updated ${D.built} · every number from the league's own Yahoo history`;
+$('#foot').textContent = `Updated ${D.built} · Data from Yahoo`;
 
 // Tabs
 const tabs = [['hall', 'Hall'], ['seasons', 'Seasons'], ['records', 'Record Book'], ['rivals', 'Rivalries'], ['drafts', 'Drafts']];
@@ -225,8 +225,9 @@ ${table([['', ''], ...names.map((n) => [esc(n), ''])], names.map((a) => `<tr><th
 function rivalry() {
   const a = $('#ra').value, b = $('#rb').value, r = D.rivalries[`${a}|${b}`];
   if (a === b) return ($('#rv').innerHTML = '<p class="verdict">Pick two different managers</p>');
-  if (!r) return ($('#rv').innerHTML = '<p class="verdict">These two have never played</p>');
-  const verdict = r.w === r.l ? 'Dead even' : `${esc(r.w > r.l ? a : b)} owns this one`;
+  if (!r) return ($('#rv').innerHTML = '<p class="verdict">No games played</p>');
+  const hi = Math.max(r.w, r.l), lo = Math.min(r.w, r.l);
+  const verdict = r.w === r.l ? `Tied ${rec(r.w, r.l, r.t)}` : `${esc(r.w > r.l ? a : b)} leads ${rec(hi, lo, r.t)}`;
   $('#rv').innerHTML = `<div class="score" aria-label="${esc(a)} ${r.w}, ${esc(b)} ${r.l}"><span class="${r.w > r.l ? 'lead' : ''}">${r.w}</span><i>–</i><span class="${r.l > r.w ? 'lead' : ''}">${r.l}</span>${r.t ? `<i>–</i><span>${r.t}</span>` : ''}</div><p class="verdict">${verdict}</p>` +
     table([['Game'], [esc(a), 'r'], [esc(b), 'r']], r.games.toReversed().map(([y, w, p, m, t]) => `<tr><td>${y} · Week ${w}${po(p)}</td><td class="r ${m > t ? 'w' : 'l'}">${pts(m)}</td><td class="r ${t > m ? 'w' : 'l'}">${pts(t)}</td></tr>`));
 }

@@ -2,6 +2,10 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.3.1 (2026-11-03)
+
+- The Hall of Fame site's wording is plainer: head-to-head shows "Andrew leads 3-2" or "Tied 2-2".
+
 ## 1.3.0 (2026-11-02)
 
 - League Hall of Fame site: champions, all-time standings, season pages with awards, record book, head-to-head rivalries and draft boards. Built with `npm run site` from your league's Yahoo history; the bot serves it when `SITE_PORT` is set. See the README.
