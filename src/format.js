@@ -35,7 +35,8 @@ export function describeTransaction(tx, players, names) {
   return `${LABEL[tx.type] ?? tx.type}${bid}\n${lines.join('\n')}`;
 }
 
-export function welcomeText(leagueName, channels) {
+export function welcomeText(leagueName, channels, siteUrl) {
+  const site = siteUrl ? ['', `**League history:** ${siteUrl} has every past champion, the record book, head-to-head records and old drafts.`] : [];
   return [
     `👋 **Welcome to ${leagueName}!** Here's how to get your team set up with the bot.`,
     '',
@@ -55,6 +56,7 @@ export function welcomeText(leagueName, channels) {
     `• <#${channels.transactions}>: every trade, waiver claim and pickup in the league`,
     "• **#team-moves** in your team's category: your team's moves",
     "• **#player-news** in your team's category: news and injury updates for your players",
+    ...site,
   ].join('\n');
 }
 

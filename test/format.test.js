@@ -94,4 +94,6 @@ test('welcome message names the league and links the shared channels', () => {
   assert.match(text, /<#111>/);
   assert.match(text, /<#222>/);
   assert.ok(text.length < 2000); // Discord's message limit
+  assert.doesNotMatch(text, /League history/);
+  assert.match(welcomeText('The Boys', {}, 'http://example.test:8080'), /League history:\*\* http:\/\/example\.test:8080/);
 });

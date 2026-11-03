@@ -105,7 +105,7 @@ async function syncRoles(guild, discordId) {
 
 // One message in #welcome with setup steps, edited in place when the text changes.
 async function postWelcome() {
-  const content = welcomeText((await get(`/league/${LEAGUE_ID}`)).name, state.channels);
+  const content = welcomeText((await get(`/league/${LEAGUE_ID}`)).name, state.channels, process.env.SITE_URL);
   if (state.welcomeText === content) return;
   const ch = client.channels.cache.get(state.channels.welcome);
   const old = state.welcomeMsg && (await ch.messages.fetch(state.welcomeMsg).catch(() => null));

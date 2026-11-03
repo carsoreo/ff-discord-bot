@@ -2,6 +2,10 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.4.1 (2026-11-03)
+
+- `#welcome` links the Hall of Fame site when `SITE_URL` is set.
+
 ## 1.4.0 (2026-11-03)
 
 - The Hall of Fame site has motion:
