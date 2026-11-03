@@ -175,9 +175,16 @@ A one-page league history site, in the spirit of Fantasy HofF: champion banners,
 1. **Get the history.** Yahoo's API is closed (see above), so the data comes from your league's Yahoo pages, read in your signed-in browser. Set the season list at the top of [scripts/yahoo-history-browser.js](scripts/yahoo-history-browser.js) (each season's league number is on your Yahoo profile under Fantasy → History), paste it into the browser console on a Yahoo Fantasy tab, and move the downloaded `yahoo-history.json` into `data/`. It saves team names, manager nicknames, final standings, weekly scores and drafts, but no emails. Yahoo throttles fast reading, so it reads one page every few seconds and takes about 10 minutes.
 2. **Merge people across seasons (if needed).** Yahoo nicknames can change between seasons. Map old names to current ones in `data/managers.json`, e.g. `{ "Jackson": "Jack" }`.
 3. **Build:** `npm run site` writes `data/site/index.html`. It's one self-contained file, so you can also just open it in a browser.
-4. **Host it:** set `SITE_PORT=8080` in the server's `.env` and the bot serves the page at `http://SERVER_IP:8080`. The port must be open in both the Oracle security list (ingress TCP 8080) and the server's firewall:
+4. **Host it:** set `SITE_PORT=8080` (and `SITE_URL` to the public address, so #welcome links it) in the server's `.env`, and the bot serves the page on that port. To put it on a real address with https, point a free [DuckDNS](https://www.duckdns.org) subdomain at the server, and put [Caddy](https://caddyserver.com) in front of the bot. Caddy gets the certificate itself:
+   ```
+   # /etc/caddy/Caddyfile
+   yourname.duckdns.org {
+   	reverse_proxy 127.0.0.1:8080
+   }
+   ```
+   Open ports 80 and 443 in the Oracle security list (ingress TCP) and in the server's firewall:
    ```bash
-   sudo iptables -I INPUT 5 -p tcp --dport 8080 -j ACCEPT && sudo netfilter-persistent save
+   sudo iptables -I INPUT 5 -p tcp --dport 80 -j ACCEPT && sudo iptables -I INPUT 5 -p tcp --dport 443 -j ACCEPT && sudo netfilter-persistent save
    ```
 
 Everything under `data/` is gitignored, so league data never lands in the public repo.
