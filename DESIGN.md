@@ -17,6 +17,11 @@ typography:
     fontWeight: 400
     lineHeight: 0.88
     letterSpacing: "-0.01em"
+  marker:
+    fontFamily: "Saira Stencil One, sans-serif"
+    fontSize: "clamp(32px, 9vw, 44px)"
+    fontWeight: 400
+    lineHeight: 1
   headline:
     fontFamily: "Saira Condensed, sans-serif"
     fontSize: "22px"
@@ -118,7 +123,7 @@ A field palette: two greens for ground, chalk for ink, one flag yellow.
 
 ### Hierarchy
 - **Display** (Stencil 400, clamp(60px, 15vw, 96px), 0.88): the league name in the end zone, uppercase.
-- **Marker** (Stencil 400, 44px, or clamp(32px, 9vw, 44px) under 480px): yard-marker years. The rivalry score uses Stencil at clamp(64px, 18vw, 112px).
+- **Marker** (Stencil 400, clamp(32px, 9vw, 44px) under 480px, 44px above): yard-marker years. The rivalry score uses Stencil at clamp(64px, 18vw, 112px).
 - **Headline** (Condensed 800, 22px, 0.12em, uppercase): section headings, with 48px above and 12px below.
 - **Title** (Condensed 800, 15–16px, 0.12–0.14em, uppercase): record-list titles and tabs.
 - **Body** (Source Sans 3, 15px, 1.5, tabular figures): tables, lists, notes up to 62ch.
@@ -135,7 +140,7 @@ A single centered column with a 1040px maximum width and a fluid gutter (clamp(1
 
 ## Elevation & Depth
 
-Flat. Depth is never shadow: the only layers are the end-zone band against the turf, and the sticky tab rail and pinned columns, which take the turf color so content passes under them. The one box-shadow in the system is a flat, no-blur turf fill that masks the gutter behind a pinned column; it is not a depth effect.
+Flat. Depth is never shadow: the only layers are the end-zone band against the turf, and the sticky tab rail and pinned columns, which take the turf color so content passes under them. There are no box-shadows; a flat turf fill masks the gutter beside a pinned column.
 
 ### Named Rules
 **The Painted Field Rule.** Nothing floats above the field. If an element needs separation, give it a chalk rule, not a shadow.

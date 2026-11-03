@@ -2,6 +2,14 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.4.0 (2026-11-03)
+
+- The Hall of Fame site has motion:
+  - On first load the champions step in one by one and the hash marks are chalked left to right.
+  - Tabs fade in and the yellow bar slides between them.
+  - Changing the season, draft year or rivalry fades the new results in.
+  - With "reduce motion" turned on, everything stays as plain fades.
+
 ## 1.3.1 (2026-11-03)
 
 - The Hall of Fame site's wording is plainer: head-to-head shows "Andrew leads 3-2" or "Tied 2-2".

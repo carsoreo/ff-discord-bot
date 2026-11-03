@@ -15,6 +15,7 @@
     --flag: #e8c547;
     --stencil: 'Saira Stencil One', sans-serif; --label: 'Saira Condensed', sans-serif; --body: 'Source Sans 3', sans-serif;
     --gutter: clamp(16px, 4vw, 32px);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
     --edge: max(var(--gutter), calc((100vw - 1040px) / 2 + var(--gutter))); /* lines frame edges up with main */
   }
   * { box-sizing: border-box; }
@@ -34,9 +35,12 @@
   nav { position: sticky; top: 0; z-index: 5; background: var(--turf); border-bottom: 2px solid var(--chalk); }
   nav .in { position: relative; display: flex; gap: clamp(14px, 4vw, 36px); padding: 0 var(--gutter); overflow-x: auto; scrollbar-width: none; padding-inline: var(--edge); }
   nav button { flex: none; background: none; border: 0; padding: 14px 0 12px; color: var(--chalk-2); font: 800 15px var(--label); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
-  nav button:hover { color: var(--chalk); }
+  nav button { transition: color .15s ease, transform .12s var(--ease-out); }
+  nav button:active { transform: scale(.97); }
+  @media (hover: hover) and (pointer: fine) { nav button:hover { color: var(--chalk); } }
   nav button[aria-selected="true"] { color: var(--chalk); }
-  nav .bar { position: absolute; bottom: -2px; left: 0; height: 4px; background: var(--flag); transition: transform .45s cubic-bezier(.16, 1, .3, 1), width .45s cubic-bezier(.16, 1, .3, 1); }
+  /* 1px bar scaled to the tab's width, so the slide is transform-only */
+  nav .bar { position: absolute; bottom: -2px; left: 0; width: 1px; height: 4px; background: var(--flag); transform-origin: 0 0; transition: transform .25s var(--ease-in-out); }
 
   main { max-width: 1040px; margin: 0 auto; padding: 0 var(--gutter) 72px; }
   section[hidden] { display: none; }
@@ -66,7 +70,8 @@
   td { border-bottom: 1px solid var(--line); }
   th:first-child, td:first-child { padding-left: 0; }
   /* Names stay put while numbers scroll sideways on phones */
-  .wrap th:first-child, .wrap td:first-child { position: sticky; left: 0; z-index: 1; background: var(--turf); box-shadow: calc(var(--gutter) * -1) 0 0 var(--turf); }
+  .wrap th:first-child, .wrap td:first-child { position: sticky; left: 0; z-index: 1; background: var(--turf); }
+  .wrap th:first-child::before, .wrap td:first-child::before { content: ""; position: absolute; top: 0; bottom: 0; right: 100%; width: var(--gutter); background: var(--turf); }
   .r { text-align: right; }
   td.name { font-weight: 700; }
   .dim { color: var(--chalk-2); }
@@ -107,17 +112,18 @@
   .matrix th[scope="row"] { border-bottom: 1px solid var(--line); color: var(--chalk-2); }
   .matrix td.self { background: var(--endzone); }
   .matrix button { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 2px 4px; border-radius: 2px; }
-  .matrix button:hover { background: var(--turf-hi); }
+  .matrix button { transition: background-color .15s ease; }
+  @media (hover: hover) and (pointer: fine) { .matrix button:hover { background: var(--turf-hi); } }
   .up { color: var(--chalk); font-weight: 700; } .down { color: var(--chalk-3); }
   td.w { color: var(--chalk); font-weight: 700; } td.l { color: var(--chalk-3); }
 
   /* Draft board */
-  .draft td { white-space: normal; min-width: 116px; vertical-align: top; font-size: 14px; line-height: 1.3; }
+  .draft td { white-space: normal; min-width: 116px; vertical-align: top; line-height: 1.3; }
   .draft td small { display: block; color: var(--chalk-2); font-size: 13px; }
   .draft th[scope="row"] { font: 400 20px var(--stencil); color: var(--chalk-3); border-bottom: 1px solid var(--line); }
 
   footer { border-top: 6px solid var(--chalk); background: var(--endzone); padding: 20px var(--gutter); font: 600 13px var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--chalk-2); text-align: center; }
-  @media (prefers-reduced-motion: reduce) { nav .bar { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { nav .bar { transition: none; } nav button:active { transform: none; } }
 </style>
 </head>
 <body>
@@ -155,13 +161,23 @@ $('#foot').textContent = `Updated ${D.built} · Data from Yahoo`;
 // Tabs
 const tabs = [['hall', 'Hall'], ['seasons', 'Seasons'], ['records', 'Record Book'], ['rivals', 'Rivalries'], ['drafts', 'Drafts']];
 $('#tabs').insertAdjacentHTML('beforeend', tabs.map(([id, n]) => `<button role="tab" id="t-${id}" aria-controls="${id}" data-t="${id}">${n}</button>`).join(''));
-function show(id) {
-  for (const [t] of tabs) { $(`#${t}`).hidden = t !== id; $(`#t-${t}`).setAttribute('aria-selected', t === id); }
-  const b = $(`#t-${id}`); $('#bar').style.width = b.offsetWidth + 'px'; $('#bar').style.transform = `translateX(${b.offsetLeft}px)`;
-  history.replaceState(null, '', '#' + id);
+// Motion: content is visible by default; these only ease it in. Reduced motion keeps the fades, drops the movement.
+const calm = matchMedia('(prefers-reduced-motion: reduce)');
+const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+function enter(el, { y = 6, ms = 200, delay = 0, scale } = {}) {
+  if (!el?.animate) return;
+  const from = calm.matches ? 'none' : `translateY(${y}px)${scale ? ` scale(${scale})` : ''}`;
+  el.animate([{ opacity: 0, transform: from }, { opacity: 1, transform: 'none' }], { duration: calm.matches ? 150 : ms, delay, easing: EASE_OUT, fill: 'backwards' });
 }
-$('#tabs').onclick = (e) => { const b = e.target.closest('button'); if (b) { show(b.dataset.t); window.scrollTo({ top: 0 }); } };
-addEventListener('resize', () => show(location.hash.slice(1) || 'hall'));
+
+function show(id, animate = true) {
+  for (const [t] of tabs) { $(`#${t}`).hidden = t !== id; $(`#t-${t}`).setAttribute('aria-selected', t === id); }
+  const b = $(`#t-${id}`); $('#bar').style.transform = `translateX(${b.offsetLeft}px) scaleX(${b.offsetWidth})`;
+  history.replaceState(null, '', '#' + id);
+  if (animate) enter($(`#${id}`));
+}
+$('#tabs').onclick = (e) => { const b = e.target.closest('button'); if (b && b.getAttribute('aria-selected') !== 'true') { show(b.dataset.t); window.scrollTo({ top: 0 }); } };
+addEventListener('resize', () => show(location.hash.slice(1) || 'hall', false));
 
 // Hall
 const leader = D.managers.reduce((a, b) => (b.winPct > a.winPct ? b : a));
@@ -194,7 +210,7 @@ function season(year) {
     s.teams.map((t) => `<tr><td>${s.complete ? (t.rank === 1 ? `<span class="flag">${ord(t.rank)}</span>` : ord(t.rank)) : t.rank}</td><td>${esc(t.name)}</td><td class="name">${esc(t.manager)}</td><td class="r">${rec(t.wins, t.losses, t.ties)}</td><td class="r">${pts(t.pf)}</td><td class="r">${pts(t.pa)}</td></tr>`));
 }
 $('#seasons').innerHTML = `<div class="picker"><h2>Season</h2><select id="yr" aria-label="Season">${D.seasons.toReversed().map((s) => `<option>${s.year}</option>`).join('')}</select></div><div id="season"></div>`;
-$('#yr').onchange = (e) => season(e.target.value); season($('#yr').value);
+$('#yr').onchange = (e) => { season(e.target.value); enter($('#season'), { y: 0, ms: 150 }); }; season($('#yr').value);
 
 // Record book
 const R = D.records;
@@ -231,8 +247,9 @@ function rivalry() {
   $('#rv').innerHTML = `<div class="score" aria-label="${esc(a)} ${r.w}, ${esc(b)} ${r.l}"><span class="${r.w > r.l ? 'lead' : ''}">${r.w}</span><i>–</i><span class="${r.l > r.w ? 'lead' : ''}">${r.l}</span>${r.t ? `<i>–</i><span>${r.t}</span>` : ''}</div><p class="verdict">${verdict}</p>` +
     table([['Game'], [esc(a), 'r'], [esc(b), 'r']], r.games.toReversed().map(([y, w, p, m, t]) => `<tr><td>${y} · Week ${w}${po(p)}</td><td class="r ${m > t ? 'w' : 'l'}">${pts(m)}</td><td class="r ${t > m ? 'w' : 'l'}">${pts(t)}</td></tr>`));
 }
-$('#ra').onchange = $('#rb').onchange = rivalry; rivalry();
-$('#rivals').addEventListener('click', (e) => { const c = e.target.closest('.matrix button'); if (c) { $('#ra').value = c.dataset.a; $('#rb').value = c.dataset.b; rivalry(); $('#ra').scrollIntoView({ behavior: 'smooth', block: 'center' }); } });
+const pick = () => { rivalry(); enter($('#rv .score'), { y: 0, ms: 200, scale: 0.96 }); enter($('#rv .wrap'), { y: 0, ms: 150, delay: 60 }); };
+$('#ra').onchange = $('#rb').onchange = pick; rivalry();
+$('#rivals').addEventListener('click', (e) => { const c = e.target.closest('.matrix button'); if (c) { $('#ra').value = c.dataset.a; $('#rb').value = c.dataset.b; pick(); $('#ra').scrollIntoView({ behavior: 'smooth', block: 'center' }); } });
 
 // Drafts
 function draft(year) {
@@ -244,10 +261,17 @@ function draft(year) {
     `<tr><th scope="row">${r + 1}</th>${s.draft.filter((d) => d[0] === r + 1).map((d) => `<td><b>${esc(d[2])}</b><small>${esc(d[3])}</small></td>`).join('')}</tr>`), 'draft');
 }
 $('#drafts').innerHTML = `<div class="picker"><h2>Draft</h2><select id="dy" aria-label="Draft season">${D.seasons.toReversed().map((s) => `<option>${s.year}</option>`).join('')}</select></div><p class="note">Scroll sideways for every pick.</p><div id="draft"></div>`;
-$('#dy').onchange = (e) => draft(e.target.value); draft($('#dy').value);
+$('#dy').onchange = (e) => { draft(e.target.value); enter($('#draft'), { y: 0, ms: 150 }); }; draft($('#dy').value);
 
 const start = tabs.some(([id]) => id === location.hash.slice(1)) ? location.hash.slice(1) : 'hall';
-show(start); document.fonts?.ready.then(() => show(start));
+// First paint: place the bar without sliding, then lay the field once (champions in a stagger, the hash rail chalked left to right).
+$('#bar').style.transition = 'none'; show(start, false);
+document.fonts?.ready.then(() => { show(start, false); requestAnimationFrame(() => ($('#bar').style.transition = '')); });
+if (start === 'hall') {
+  document.querySelectorAll('.marker').forEach((m, i) => enter(m, { y: 10, ms: 450, delay: 80 + Math.min(i, 6) * 50 }));
+  const hash = $('.hash');
+  if (hash?.animate) hash.animate(calm.matches ? [{ opacity: 0 }, { opacity: .55 }] : [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: calm.matches ? 150 : 700, delay: 200, easing: EASE_OUT, fill: 'backwards' });
+}
 </script>
 </body>
 </html>
