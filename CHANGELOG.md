@@ -2,6 +2,13 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.5.0 (2026-11-03)
+
+- Player stats on the Hall of Fame site, from every team's weekly lineup:
+  - A Players tab with the best player games, the most points left on the bench, each manager's top players, and the best and worst draft picks.
+  - Each season's draft now has grades, its best-value and worst early picks, and every pick's points on the board.
+  - `scripts/yahoo-lineups-browser.js` collects the lineups.
+
 ## 1.4.1 (2026-11-03)
 
 - `#welcome` links the Hall of Fame site when `SITE_URL` is set.
