@@ -30,6 +30,16 @@ test('player stats: best games, bench points, MVPs and draft value', () => {
   assert.equal(d.teams[0].manager, 'Ann');
 });
 
+test('keepers are left out of draft value: marked by Yahoo or kept from last season', () => {
+  const prev = { ...season, year: 2023, draft: [] };
+  const marked = { ...season, draft: season.draft.map((d) => (d.player === 'Sleeper' ? { ...d, keeper: true } : d)) };
+  const lu = { ...lineups, 2023: [{ w: 3, t: 2, p: [[4, 'Filler', 'BN', 0]] }] }; // Bob ended 2023 holding Filler
+  const d = playerStats(buildHistory([prev, marked]), lu).drafts.bySeason[2024];
+  assert.deepEqual(d.keepers, [3, 4]);
+  assert.ok(!d.steals.some((p) => p.keeper));
+  assert.equal(d.steals[0].player, 'Star');
+});
+
 test('no lineups means no player stats', () => {
   assert.equal(playerStats(buildHistory([season]), {}), null);
 });

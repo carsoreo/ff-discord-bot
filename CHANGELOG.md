@@ -2,6 +2,11 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.5.1 (2026-11-03)
+
+- Draft grades, best-value picks and busts leave out keepers. A keeper is a pick Yahoo marks as one, or a player the same manager had at the end of the season before. Keepers are labeled on the draft board.
+- The history collector saves Yahoo's keeper marks.
+
 ## 1.5.0 (2026-11-03)
 
 - Player stats on the Hall of Fame site, from every team's weekly lineup:

@@ -67,7 +67,8 @@ const SEASONS = [[2020, 20528], [2021, 23769], [2022, 137985], [2023, 353218], [
       for (const tr of tb.querySelectorAll('tr')) {
         const pick = parseInt(clean(tr.querySelector('td.first')?.textContent));
         const team = s.teams.find((t) => t.name === clean(tr.querySelector('td.last')?.textContent));
-        if (pick) s.draft.push({ round: i + 1, pick, player: clean(tr.querySelector('td.player')?.textContent), team: team?.id ?? null });
+        const keeper = !!tr.querySelector('[title="This player is a keeper."]');
+        if (pick) s.draft.push({ round: i + 1, pick, player: clean(tr.querySelector('td.player a.name')?.textContent || tr.querySelector('td.player')?.textContent), team: team?.id ?? null, keeper });
       }
     });
     done.push(s);
