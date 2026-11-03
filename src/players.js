@@ -1,6 +1,7 @@
 // Player stats for the Hall of Fame site, from weekly Yahoo lineups:
 // lineups = { [year]: [{ w: week, t: teamId, p: [[playerId, name, slot, points], …] }] }
 const BENCH = new Set(['BN', 'IR']);
+const name = (n) => n.replace(/[\uE000-\uF8FF]/g, '').replace(/\s+/g, ' ').trim(); // strips Yahoo's icon glyphs
 const round2 = (n) => Math.round(n * 100) / 100;
 const GRADES = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'F', 'F'];
 
@@ -34,23 +35,30 @@ export function playerStats(history, lineups, top = 10) {
   return { bestGames, benchWeeks, mvps, drafts: draftGrades(history, rows, top) };
 }
 
-// Draft value: points a pick scored while on the team that drafted him (bench included), that season.
-// Keepers aren't real picks, so they're left out: Yahoo's keeper mark, or (for seasons Yahoo didn't mark)
-// a player the same manager had on his roster at the end of the season before.
+// Draft value: points the player scored that season on any roster (bench included), so a pick traded away still counts.
+// Keepers aren't real picks, so they're left out. Where Yahoo marked keepers, its marks are used. For a season it
+// didn't mark (2023), a pick is a keeper if the same manager or team ended the season before with that player, or
+// if it falls in the keeper rounds (where most marked keepers sit) and the player was on any roster at the end.
 // A pick's surplus is how much higher it finished in the value ranking than where it was taken among real picks.
 function draftGrades(history, rows, top) {
   const pts = {};
-  for (const r of rows) pts[`${r.year}|${r.team}|${r.name}`] = (pts[`${r.year}|${r.team}|${r.name}`] ?? 0) + r.points;
+  for (const r of rows) pts[`${r.year}|${r.name}`] = (pts[`${r.year}|${r.name}`] ?? 0) + r.points;
   const finalRoster = {};
   for (const [year, rs] of Object.entries(Object.groupBy(rows, (r) => r.year))) {
     const last = Math.max(...rs.map((r) => r.week));
-    finalRoster[year] = new Set(rs.filter((r) => r.week === last).map((r) => `${r.manager}|${r.name}`));
+    finalRoster[year] = new Set(rs.filter((r) => r.week === last).flatMap((r) => [`m|${r.manager}|${r.name}`, `t|${r.team}|${r.name}`, `a|${r.name}`]));
   }
+  const marked = history.seasons.filter((s) => s.draft.some((d) => d.keeper));
+  const share = (r) => { const p = marked.flatMap((s) => s.draft.filter((d) => d.round === r)); return p.length ? p.filter((d) => d.keeper).length / p.length : 0; };
+  const keeperRound = Math.min(...[...new Set(marked.flatMap((s) => s.draft.map((d) => d.round)))].filter((r) => share(r) >= 0.5), Infinity);
   const bySeason = {};
   for (const s of history.seasons) {
     if (!s.complete || !s.draft.length) continue;
-    const kept = (d) => d.keeper || finalRoster[s.year - 1]?.has(`${d.manager}|${d.player}`);
-    const all = s.draft.map((d, i) => ({ year: s.year, overall: i + 1, round: d.round, pick: d.pick, player: d.player, manager: d.manager, keeper: !!kept(d), points: round2(pts[`${s.year}|${d.team}|${d.player}`] ?? 0) }));
+    const prev = finalRoster[s.year - 1];
+    const yahooMarked = s.draft.some((d) => d.keeper);
+    const kept = (d) => yahooMarked ? d.keeper : !!prev && (prev.has(`m|${d.manager}|${name(d.player)}`) || prev.has(`t|${d.team}|${name(d.player)}`)
+      || (d.round >= keeperRound && prev.has(`a|${name(d.player)}`)));
+    const all = s.draft.map((d, i) => ({ year: s.year, overall: i + 1, round: d.round, pick: d.pick, player: name(d.player), manager: d.manager, keeper: kept(d), points: round2(pts[`${s.year}|${name(d.player)}`] ?? 0) }));
     const picks = all.filter((p) => !p.keeper);
     picks.forEach((p, i) => { p.slot = i + 1; });
     picks.toSorted((a, b) => b.points - a.points).forEach((p, i) => { p.surplus = p.slot - (i + 1); });

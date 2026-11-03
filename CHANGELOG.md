@@ -2,6 +2,12 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.5.2 (2026-11-03)
+
+- Draft value counts a player's points that season on any roster, so a pick traded away is no longer a zero-point bust.
+- Keeper picks match their lineups: Yahoo's keeper icon left a hidden character in the names, and the collectors now strip it.
+- 2023, which Yahoo didn't mark, gets its keepers worked out from rosters. A pick counts if the same manager or team ended 2022 with the player, or if it's in the usual keeper rounds and the player was on any roster.
+
 ## 1.5.1 (2026-11-03)
 
 - Draft grades, best-value picks and busts leave out keepers. A keeper is a pick Yahoo marks as one, or a player the same manager had at the end of the season before. Keepers are labeled on the draft board.

@@ -30,14 +30,23 @@ test('player stats: best games, bench points, MVPs and draft value', () => {
   assert.equal(d.teams[0].manager, 'Ann');
 });
 
-test('keepers are left out of draft value: marked by Yahoo or kept from last season', () => {
-  const prev = { ...season, year: 2023, draft: [] };
+test("keepers are left out of draft value: Yahoo's marks where it has them", () => {
   const marked = { ...season, draft: season.draft.map((d) => (d.player === 'Sleeper' ? { ...d, keeper: true } : d)) };
-  const lu = { ...lineups, 2023: [{ w: 3, t: 2, p: [[4, 'Filler', 'BN', 0]] }] }; // Bob ended 2023 holding Filler
-  const d = playerStats(buildHistory([prev, marked]), lu).drafts.bySeason[2024];
-  assert.deepEqual(d.keepers, [3, 4]);
-  assert.ok(!d.steals.some((p) => p.keeper));
-  assert.equal(d.steals[0].player, 'Star');
+  const d = playerStats(buildHistory([marked]), lineups).drafts.bySeason[2024];
+  assert.deepEqual(d.keepers, [3]);
+  assert.ok(!d.steals.some((p) => p.player === 'Sleeper'));
+});
+
+test('unmarked seasons infer keepers from last season’s final rosters', () => {
+  const prev = { ...season, year: 2023, draft: [] };
+  const lu = { ...lineups, 2023: [{ w: 3, t: 2, p: [[4, 'Filler', 'BN', 0]] }] }; // Bob's team ended 2023 holding Filler
+  const d = playerStats(buildHistory([prev, season]), lu).drafts.bySeason[2024];
+  assert.deepEqual(d.keepers, [4]);
+});
+
+test("Yahoo's keeper icon glyph in a drafted name still matches the lineups", () => {
+  const glyph = { ...season, draft: season.draft.map((d) => (d.player === 'Star' ? { ...d, player: 'Star ' } : d)) };
+  assert.equal(playerStats(buildHistory([glyph]), lineups).drafts.bySeason[2024].points[2], 75);
 });
 
 test('no lineups means no player stats', () => {

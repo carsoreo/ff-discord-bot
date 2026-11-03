@@ -8,7 +8,7 @@ const TEAMS = 10;
 
 (async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const clean = (s) => (s ?? '').replace(/\s+/g, ' ').trim();
+  const clean = (s) => (s ?? '').replace(/[\uE000-\uF8FF]/g, '').replace(/\s+/g, ' ').trim(); // Yahoo icon glyphs live in the private-use range
   const page = async (u) => {
     for (let i = 0; ; i++) {
       await sleep(3000);
