@@ -234,7 +234,7 @@ $('#records').innerHTML = `<h2>Record book</h2><p class="note">Every week since 
 const P = D.players;
 if (P) {
   const ordinal = (r) => `${ord(r.overall)} overall, round ${r.round}`;
-  $('#players').innerHTML = `<h2>Players</h2><p class="note">From every team's weekly lineup since ${D.seasons[0].year}. Points count for the team that had the player that week.</p><div class="board">
+  $('#players').innerHTML = `<h2>Players</h2><p class="note">From every team's weekly lineup since ${D.seasons[0].year}. Points count for the team that had the player that week. In a few weeks Yahoo hides several players' points, so those games are left out.</p><div class="board">
     ${list('Best player games', P.bestGames.map((r) => [pts(r.points), `${esc(r.name)} <span class="dim">for ${esc(r.manager)}</span>`, when(r)]), 'Starters only.')}
     ${list('Most points left on the bench', P.benchWeeks.map((r) => [pts(r.points), esc(r.manager), `${r.year} · Week ${r.week} · ${esc(r.best.name)} had ${pts(r.best.points)}`]), 'One team, one week.')}
     ${list('Best draft picks', P.drafts.steals.map((r) => [pts(r.points), `${esc(r.player)} <span class="dim">by ${esc(r.manager)}</span>`, `${r.year} · ${ordinal(r)}`]), 'Picks that scored far more than where they went. Keepers left out.')}
