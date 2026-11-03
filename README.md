@@ -167,3 +167,17 @@ The weekly recap can read a Yahoo league instead of Sleeper. **As of 2026 Yahoo 
 3. Run `npm run yahoo-auth` and follow the prompts. It saves `YAHOO_REFRESH_TOKEN` to `.env`.
 
 Remove `YAHOO_LEAGUE_ID` to switch the recap back to Sleeper. Yahoo recaps don't include standings.
+
+## League Hall of Fame site (optional)
+
+A one-page league history site, in the spirit of Fantasy HofF: champion banners, all-time standings, a page per season with awards (most points, bum of the year, luckiest and unluckiest), a record book (highest and lowest scores, blowouts, closest games, best seasons, win and losing streaks), head-to-head records between every pair of managers, and every draft board.
+
+1. **Get the history.** Yahoo's API is closed (see above), so the data comes from your league's Yahoo pages, read in your signed-in browser. Set the season list at the top of [scripts/yahoo-history-browser.js](scripts/yahoo-history-browser.js) (each season's league number is on your Yahoo profile under Fantasy → History), paste it into the browser console on a Yahoo Fantasy tab, and move the downloaded `yahoo-history.json` into `data/`. It saves team names, manager nicknames, final standings, weekly scores and drafts, but no emails. Yahoo throttles fast reading, so it reads one page every few seconds and takes about 10 minutes.
+2. **Merge people across seasons (if needed).** Yahoo nicknames can change between seasons. Map old names to current ones in `data/managers.json`, e.g. `{ "Jackson": "Jack" }`.
+3. **Build:** `npm run site` writes `data/site/index.html`. It's one self-contained file, so you can also just open it in a browser.
+4. **Host it:** set `SITE_PORT=8080` in the server's `.env` and the bot serves the page at `http://SERVER_IP:8080`. The port must be open in both the Oracle security list (ingress TCP 8080) and the server's firewall:
+   ```bash
+   sudo iptables -I INPUT 5 -p tcp --dport 8080 -j ACCEPT && sudo netfilter-persistent save
+   ```
+
+Everything under `data/` is gitignored, so league data never lands in the public repo.

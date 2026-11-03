@@ -6,3 +6,6 @@ __pycache__/
 data/
 bot.log
 SERVER.md
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/live/

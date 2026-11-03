@@ -2,6 +2,13 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.3.0 (2026-11-02)
+
+- League Hall of Fame site: champions, all-time standings, season pages with awards, record book, head-to-head rivalries and draft boards. Built with `npm run site` from your league's Yahoo history; the bot serves it when `SITE_PORT` is set. See the README.
+- The record book includes the highest-scoring games (both teams' points combined).
+- The site's look is a chalked football field: an end-zone masthead, champions as yard markers and chalk-ruled tables. It's built for phones, with name columns pinned while tables scroll. The design system is in DESIGN.md.
+- `scripts/yahoo-history-browser.js` collects a league's past seasons from Yahoo's pages, since Yahoo's API is closed to new apps.
+
 ## 1.2.0 (2026-10-21)
 
 - `#welcome` is read-only: members can read and react, only the bot posts. Needs the **Manage Roles** permission.
