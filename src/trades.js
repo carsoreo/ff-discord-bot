@@ -5,7 +5,7 @@
 import { lineupRows } from './players.js';
 
 const round2 = (n) => Math.round(n * 100) / 100;
-const clean = (n) => n.replace(/[-]/g, '').replace(/\s+/g, ' ').trim();
+const clean = (n) => n.replace(/[\uE000-\uF8FF]/g, '').replace(/\s+/g, ' ').trim();
 
 export function tradeStats(history, lineups, trades, top = 10) {
   if (!Object.keys(trades ?? {}).length) return null;
