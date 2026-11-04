@@ -1,6 +1,19 @@
 # Changelog
 
-Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
+Versions follow [semantic versioning](https://semver.org).
+
+## 2.0.0 (2026-11-03)
+
+- **Breaking:** the league Hall of Fame site moved to its own repo, [league-hall-of-fame](https://github.com/carsoreo/league-hall-of-fame).
+  - The bot no longer builds or serves it: `npm run site`, the site's collectors and stats code, and the `SITE_PORT` setting are gone.
+  - Serve the site with any static host. `SITE_URL` still links it in `#welcome`.
+- Cleaner README.
+
+## 1.7.0 (2026-11-03)
+
+- Hall of Fame site:
+  - A Trades tab: most lopsided trades, trade records, favorite trade partners, and every trade by season.
+  - A biggest-steal callout and a best drafters table on the Players tab.
 
 ## 1.6.1 (2026-11-03)
 

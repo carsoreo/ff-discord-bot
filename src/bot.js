@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import http from 'node:http';
 import { Client, GatewayIntentBits, ChannelType, Events, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { get, getPlayers, getPlayerNews, getEspnIds } from './sleeper.js';
 import { teamName, playerName, nameKey, describeTransaction, tradeBlockText, weeklyRecap, sleeperWeek, playerUpdateText, welcomeText } from './format.js';
@@ -327,14 +326,3 @@ client.once(Events.ClientReady, async () => {
 });
 
 client.login(DISCORD_TOKEN);
-
-// League Hall of Fame page (built by `npm run site`), served when SITE_PORT is set.
-if (process.env.SITE_PORT) {
-  http.createServer((req, res) => {
-    fs.readFile('data/site/index.html', (err, html) => {
-      if (err || !['/', '/index.html'].includes(req.url.split(/[?#]/)[0])) return res.writeHead(404).end('Not found');
-      // no-cache: browsers check for a rebuilt page each visit instead of showing a stale copy
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }).end(html);
-    });
-  }).listen(Number(process.env.SITE_PORT), () => console.log(`Hall of Fame site on port ${process.env.SITE_PORT}`));
-}
