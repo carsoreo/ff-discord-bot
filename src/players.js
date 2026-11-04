@@ -66,9 +66,11 @@ function positionOf(rows, positions) {
 // Keepers aren't real picks, so they're left out. Where Yahoo marked keepers, its marks are used. For a season it
 // didn't mark (2023), a pick is a keeper if the same manager or team ended the season before with that player, or
 // if it falls in the keeper rounds (where most marked keepers sit) and the player was on any roster at the end.
-// Value is judged within a position: a pick's surplus is how many spots higher he finished among that season's
-// drafted players at his position than he was taken (drafted WR30, finished WR5 = +25).
-// Draft grades rank managers by the total surplus of their real picks.
+// Value is judged within a position. Draft spot: keepers count as claimed before the draft, so a pick's spot is the
+// number of kept players at his position plus his order among real picks. Finish: his rank by points among every
+// player at that position that season (kept, drafted or picked up), capped at the number of players claimed there.
+// Surplus = draft spot minus finish (claimed WR46, finished WR5 = +41). Draft grades rank managers by the total
+// surplus of their real picks.
 function draftGrades(history, rows, top, posOf) {
   const pts = {};
   for (const r of rows) pts[`${r.year}|${r.name}`] = (pts[`${r.year}|${r.name}`] ?? 0) + r.points;
@@ -89,10 +91,23 @@ function draftGrades(history, rows, top, posOf) {
       || (d.round >= keeperRound && prev.has(`a|${name(d.player)}`)));
     const all = s.draft.map((d, i) => ({ year: s.year, overall: i + 1, round: d.round, pick: d.pick, player: name(d.player), manager: d.manager, keeper: kept(d), points: round2(pts[`${s.year}|${name(d.player)}`] ?? 0) }));
     const picks = all.filter((p) => !p.keeper);
-    for (const p of picks) p.pos = posOf(p.player);
+    for (const p of all) p.pos = posOf(p.player);
+    // Finish ranks among everyone who played that position this season.
+    const finish = {};
+    const season = Object.keys(pts).filter((k) => k.startsWith(`${s.year}|`)).map((k) => ({ player: k.slice(5), points: pts[k] }));
+    for (const group of Object.values(Object.groupBy(season, (p) => posOf(p.player)))) {
+      group.toSorted((a, b) => b.points - a.points).forEach((p, i) => { finish[p.player] = i + 1; });
+    }
+    const keptAt = Object.groupBy(all.filter((p) => p.keeper), (p) => p.pos);
+    const claimedAt = Object.groupBy(all, (p) => p.pos);
     for (const group of Object.values(Object.groupBy(picks, (p) => p.pos))) {
-      group.forEach((p, i) => { p.posSlot = i + 1; });
-      group.toSorted((a, b) => b.points - a.points).forEach((p, i) => { p.posRank = i + 1; p.surplus = p.posSlot - p.posRank; });
+      group.forEach((p, i) => {
+        p.posSlot = (keptAt[p.pos]?.length ?? 0) + i + 1;
+        p.posRank = finish[p.player] ?? null; // null: never on a roster
+        // A dud counts as finishing last among the players claimed at his position, so a late flier that never
+        // played costs little and an early bust costs a lot.
+        p.surplus = p.posSlot - Math.min(p.posRank ?? Infinity, claimedAt[p.pos].length);
+      });
     }
     const teams = Object.values(Object.groupBy(picks, (p) => p.manager))
       .map((g) => ({ manager: g[0].manager, value: g.reduce((a, p) => a + p.surplus, 0), points: round2(g.reduce((a, p) => a + p.points, 0)) }))

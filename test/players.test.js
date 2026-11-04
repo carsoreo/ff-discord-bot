@@ -62,6 +62,15 @@ test('a drafted player who never started takes his position from the fallback li
   assert.equal(d.steals.find((p) => p.player === 'Filler').pos, 'QB');
 });
 
+test('draft spot counts keepers first, and finish ranks against every player at the position', () => {
+  const kept = { ...season, draft: season.draft.map((d) => (d.player === 'Bust' ? { ...d, keeper: true } : d)) };
+  const lu = structuredClone(lineups);
+  for (const r of lu[2024]) if (r.t === 2) r.p.push([9, 'Waiver Guy', 'RB', 50]); // undrafted RB who outscored everyone
+  const d = playerStats(buildHistory([kept]), lu).drafts.bySeason[2024];
+  const sleeper = d.steals.find((p) => p.player === 'Sleeper');
+  assert.deepEqual([sleeper.posSlot, sleeper.posRank, sleeper.surplus], [2, 2, 0]); // 2nd RB claimed (after kept Bust), 2nd RB in points
+});
+
 test('no lineups means no player stats', () => {
   assert.equal(playerStats(buildHistory([season]), {}), null);
 });

@@ -2,6 +2,12 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.6.1 (2026-11-03)
+
+- A pick's finish is ranked against every player at his position that season, kept and undrafted included. Before, "WR1" meant only the best of the WRs drafted that year.
+- Keepers count as claimed before the draft, so a pick's draft spot is kept players at his position plus his order among real picks.
+- A pick that never played counts as finishing last among players claimed at his position, so late-round fliers don't sink draft grades.
+
 ## 1.6.0 (2026-11-03)
 
 - Draft value is judged within each position: a pick drafted WR47 who finished WR14 is +33. Late QBs, kickers and defenses no longer crowd the best-value lists.
