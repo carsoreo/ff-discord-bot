@@ -14,7 +14,7 @@ const season = {
   ],
 };
 const lineups = { 2024: [1, 2, 3].flatMap((w) => [
-  { w, t: 1, p: [[1, 'Bust', 'RB', 2], [3, 'Sleeper', 'WR', 30], [5, 'Benchwarmer', 'BN', 40]] },
+  { w, t: 1, p: [[1, 'Bust', 'RB', 2], [3, 'Sleeper', 'RB', 30], [5, 'Benchwarmer', 'BN', 40]] },
   { w, t: 2, p: [[2, 'Star', 'QB', 25], [4, 'Filler', 'BN', 1]] },
 ]) };
 
@@ -24,7 +24,8 @@ test('player stats: best games, bench points, MVPs and draft value', () => {
   assert.equal(s.benchWeeks[0].points, 40);
   assert.equal(s.mvps.find((m) => m.manager === 'Ann').players[0].name, 'Sleeper');
   const d = s.drafts.bySeason[2024];
-  assert.equal(d.steals[0].player, 'Sleeper'); // 3rd pick, best value
+  assert.equal(d.steals[0].player, 'Sleeper'); // RB2 in the draft, RB1 in points
+  assert.deepEqual([d.steals[0].pos, d.steals[0].posSlot, d.steals[0].posRank, d.steals[0].surplus], ['RB', 2, 1, 1]);
   assert.equal(d.busts[0].player, 'Bust');
   assert.equal(d.points[1], 6); // 3 weeks x 2 points
   assert.equal(d.teams[0].manager, 'Ann');
@@ -54,6 +55,11 @@ test("a starter hidden behind Yahoo's Bye label gets the rest of the team score"
   lu[2024][0].p[1][3] = null; // Ann week 1: Sleeper unknown; team scored 100 with Bust's 2
   const s = playerStats(buildHistory([season]), lu);
   assert.equal(s.drafts.bySeason[2024].points[3], 98 + 30 + 30);
+});
+
+test('a drafted player who never started takes his position from the fallback list', () => {
+  const d = playerStats(buildHistory([season]), lineups, 10, { filler: 'QB' }).drafts.bySeason[2024];
+  assert.equal(d.steals.find((p) => p.player === 'Filler').pos, 'QB');
 });
 
 test('no lineups means no player stats', () => {

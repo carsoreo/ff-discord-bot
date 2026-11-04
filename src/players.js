@@ -5,7 +5,8 @@ const name = (n) => n.replace(/[\uE000-\uF8FF]/g, '').replace(/\s+/g, ' ').trim(
 const round2 = (n) => Math.round(n * 100) / 100;
 const GRADES = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'F', 'F'];
 
-export function playerStats(history, lineups, top = 10) {
+// positions: optional fallback { normalizedName: 'RB' } (from Sleeper's player list) for players who never started.
+export function playerStats(history, lineups, top = 10, positions = {}) {
   const rows = [];
   for (const s of history.seasons) {
     const byId = Object.fromEntries(s.teams.map((t) => [t.id, t]));
@@ -43,15 +44,32 @@ export function playerStats(history, lineups, top = 10) {
       .toSorted((a, b) => b.points - a.points).slice(0, 3),
   })).toSorted((a, b) => a.manager.localeCompare(b.manager));
 
-  return { bestGames, benchWeeks, mvps, drafts: draftGrades(history, rows, top) };
+  return { bestGames, benchWeeks, mvps, drafts: draftGrades(history, rows, top, positionOf(rows, positions)) };
+}
+
+export const nameOnly = (n) => n.toLowerCase().replace(/\b(jr|sr|ii|iii|iv|v)\b\.?/g, '').replace(/[^a-z]/g, '');
+const FIXED = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+
+// A player's position: where he was started most (flex starts don't say), else the fallback list, else FLEX if he
+// only ever started at flex.
+function positionOf(rows, positions) {
+  const count = {};
+  for (const r of rows) if (r.started) (count[r.name] ??= {})[r.slot] = (count[r.name]?.[r.slot] ?? 0) + 1;
+  return (n) => {
+    const c = count[n] ?? {};
+    const best = FIXED.filter((p) => c[p]).toSorted((a, b) => c[b] - c[a])[0];
+    return best ?? positions[nameOnly(n)] ?? (c['W/R/T'] ? 'FLEX' : 'UNK');
+  };
 }
 
 // Draft value: points the player scored that season on any roster (bench included), so a pick traded away still counts.
 // Keepers aren't real picks, so they're left out. Where Yahoo marked keepers, its marks are used. For a season it
 // didn't mark (2023), a pick is a keeper if the same manager or team ended the season before with that player, or
 // if it falls in the keeper rounds (where most marked keepers sit) and the player was on any roster at the end.
-// A pick's surplus is how much higher it finished in the value ranking than where it was taken among real picks.
-function draftGrades(history, rows, top) {
+// Value is judged within a position: a pick's surplus is how many spots higher he finished among that season's
+// drafted players at his position than he was taken (drafted WR30, finished WR5 = +25).
+// Draft grades rank managers by the total surplus of their real picks.
+function draftGrades(history, rows, top, posOf) {
   const pts = {};
   for (const r of rows) pts[`${r.year}|${r.name}`] = (pts[`${r.year}|${r.name}`] ?? 0) + r.points;
   const finalRoster = {};
@@ -71,10 +89,14 @@ function draftGrades(history, rows, top) {
       || (d.round >= keeperRound && prev.has(`a|${name(d.player)}`)));
     const all = s.draft.map((d, i) => ({ year: s.year, overall: i + 1, round: d.round, pick: d.pick, player: name(d.player), manager: d.manager, keeper: kept(d), points: round2(pts[`${s.year}|${name(d.player)}`] ?? 0) }));
     const picks = all.filter((p) => !p.keeper);
-    picks.forEach((p, i) => { p.slot = i + 1; });
-    picks.toSorted((a, b) => b.points - a.points).forEach((p, i) => { p.surplus = p.slot - (i + 1); });
-    const teams = Object.values(Object.groupBy(picks, (p) => p.manager)).map((g) => ({ manager: g[0].manager, points: round2(g.reduce((a, p) => a + p.points, 0)) }))
-      .toSorted((a, b) => b.points - a.points).map((t, i, list) => ({ ...t, grade: GRADES[Math.floor((i * GRADES.length) / list.length)] }));
+    for (const p of picks) p.pos = posOf(p.player);
+    for (const group of Object.values(Object.groupBy(picks, (p) => p.pos))) {
+      group.forEach((p, i) => { p.posSlot = i + 1; });
+      group.toSorted((a, b) => b.points - a.points).forEach((p, i) => { p.posRank = i + 1; p.surplus = p.posSlot - p.posRank; });
+    }
+    const teams = Object.values(Object.groupBy(picks, (p) => p.manager))
+      .map((g) => ({ manager: g[0].manager, value: g.reduce((a, p) => a + p.surplus, 0), points: round2(g.reduce((a, p) => a + p.points, 0)) }))
+      .toSorted((a, b) => b.value - a.value || b.points - a.points).map((t, i, list) => ({ ...t, grade: GRADES[Math.floor((i * GRADES.length) / list.length)] }));
     bySeason[s.year] = {
       points: Object.fromEntries(all.map((p) => [p.overall, p.points])),
       keepers: all.filter((p) => p.keeper).map((p) => p.overall),

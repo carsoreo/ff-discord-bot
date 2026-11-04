@@ -3,14 +3,23 @@
 // Usage: node scripts/build-site.js [path/to/yahoo-history.json]
 import fs from 'node:fs';
 import { buildHistory, headToHead } from '../src/history.js';
-import { playerStats } from '../src/players.js';
+import { playerStats, nameOnly } from '../src/players.js';
 
 const src = process.argv[2] ?? 'data/yahoo-history.json';
 const aliases = fs.existsSync('data/managers.json') ? JSON.parse(fs.readFileSync('data/managers.json', 'utf8')) : {};
 const h = buildHistory(JSON.parse(fs.readFileSync(src, 'utf8')), aliases);
 
 const lineups = fs.existsSync('data/yahoo-lineups.json') ? JSON.parse(fs.readFileSync('data/yahoo-lineups.json', 'utf8')) : {};
-const players = playerStats(h, lineups);
+// Sleeper's player list (cached by the bot) gives positions for drafted players who never started.
+const positions = {};
+if (fs.existsSync('data/players.json')) {
+  for (const p of Object.values(JSON.parse(fs.readFileSync('data/players.json', 'utf8')))) {
+    if (!['QB', 'RB', 'WR', 'TE', 'K', 'DEF'].includes(p.position)) continue;
+    const n = p.position === 'DEF' ? p.last_name : p.full_name; // Yahoo calls defenses by nickname ("Patriots")
+    if (n) positions[nameOnly(n)] ??= p.position;
+  }
+}
+const players = playerStats(h, lineups, 10, positions);
 
 const names = h.managers.map((m) => m.manager);
 const rivalries = {};

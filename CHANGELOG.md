@@ -2,6 +2,12 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.6.0 (2026-11-03)
+
+- Draft value is judged within each position: a pick drafted WR47 who finished WR14 is +33. Late QBs, kickers and defenses no longer crowd the best-value lists.
+- Draft grades rank managers by the total spots their picks climbed.
+- A player's position is where he started most. Players who never started take their position from Sleeper's player list.
+
 ## 1.5.4 (2026-11-03)
 
 - The site is served with `Cache-Control: no-cache`, so browsers show the latest build instead of a saved copy.
