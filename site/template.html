@@ -102,6 +102,11 @@
   .grades .award { grid-template-columns: 44px 1fr; }
   .grades .award dt { font: 400 26px/1 var(--stencil); letter-spacing: 0; color: var(--chalk); }
 
+  .callout { display: flex; align-items: center; gap: 20px; padding: 16px 0 18px; border-top: 2px solid var(--chalk); border-bottom: 1px solid var(--line); }
+  .callout .big { font: 400 clamp(56px, 14vw, 88px)/1 var(--stencil); color: var(--flag); }
+  .callout b { font: 800 22px var(--label); letter-spacing: .08em; text-transform: uppercase; }
+  .callout small { display: block; color: var(--chalk-2); }
+
   /* Rivalries */
   .vs { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin: 8px 0; }
   .vs select { width: 100%; }
@@ -136,6 +141,7 @@
   <section id="seasons" hidden></section>
   <section id="records" hidden></section>
   <section id="players" hidden></section>
+  <section id="trades" hidden></section>
   <section id="rivals" hidden></section>
   <section id="drafts" hidden></section>
 </main>
@@ -162,7 +168,7 @@ $('#sub').innerHTML = `<b>Hall of Fame</b> · Est. ${D.seasons[0].year} · ${D.s
 $('#foot').textContent = `Updated ${D.built} · Data from Yahoo`;
 
 // Tabs
-const tabs = [['hall', 'Hall'], ['seasons', 'Seasons'], ['records', 'Record Book'], ...(D.players ? [['players', 'Players']] : []), ['rivals', 'Rivalries'], ['drafts', 'Drafts']];
+const tabs = [['hall', 'Hall'], ['seasons', 'Seasons'], ['records', 'Record Book'], ...(D.players ? [['players', 'Players']] : []), ...(D.trades ? [['trades', 'Trades']] : []), ['rivals', 'Rivalries'], ['drafts', 'Drafts']];
 $('#tabs').insertAdjacentHTML('beforeend', tabs.map(([id, n]) => `<button role="tab" id="t-${id}" aria-controls="${id}" data-t="${id}">${n}</button>`).join(''));
 // Motion: content is visible by default; these only ease it in. Reduced motion keeps the fades, drops the movement.
 const calm = matchMedia('(prefers-reduced-motion: reduce)');
@@ -235,14 +241,33 @@ const P = D.players;
 if (P) {
   const climb = (r) => `claimed ${r.pos}${r.posSlot}, ${r.posRank ? `finished ${r.pos}${r.posRank}` : 'never played'} · ${pts(r.points)} pts`;
   const signed = (n) => (n > 0 ? '+' : '') + n;
-  $('#players').innerHTML = `<h2>Players</h2><p class="note">From every team's weekly lineup since ${D.seasons[0].year}. Points count for the team that had the player that week. In a few weeks Yahoo hides several players' points, so those games are left out.</p><div class="board">
+  const steal = P.drafts.steals[0];
+  $('#players').innerHTML = `${steal ? `<h2>Biggest steal ever</h2><div class="callout"><span class="big">${signed(steal.surplus)}</span><div><b>${esc(steal.player)}</b> <span class="dim">by ${esc(steal.manager)}, ${steal.year}</span><small>${climb(steal)}</small></div></div>` : ''}<h2>Players</h2><p class="note">From every team's weekly lineup since ${D.seasons[0].year}. Points count for the team that had the player that week. In a few weeks Yahoo hides several players' points, so those games are left out.</p><div class="board">
     ${list('Best player games', P.bestGames.map((r) => [pts(r.points), `${esc(r.name)} <span class="dim">for ${esc(r.manager)}</span>`, when(r)]), 'Starters only.')}
     ${list('Most points left on the bench', P.benchWeeks.map((r) => [pts(r.points), esc(r.manager), `${r.year} · Week ${r.week} · ${esc(r.best.name)} had ${pts(r.best.points)}`]), 'One team, one week.')}
     ${list('Best draft picks', P.drafts.steals.map((r) => [signed(r.surplus), `${esc(r.player)} <span class="dim">by ${esc(r.manager)}</span>`, `${r.year} · ${climb(r)}`]), 'Spots climbed at his position, from where he was claimed (keepers go first) to where he finished among everyone at that position.')}
     ${list('Worst early picks', P.drafts.busts.map((r) => [signed(r.surplus), `${esc(r.player)} <span class="dim">by ${esc(r.manager)}</span>`, `${r.year} · ${climb(r)}`]), 'Rounds 1–3: spots dropped at his position. A pick can drop no lower than the last player claimed there.')}
   </div>
+  <h2>Best drafters</h2><p class="note">Average spots each manager's picks climbed at their positions per season, keepers left out. Grades are by season, oldest first.</p>
+  ${table([['Manager'], ['Per season', 'r'], ['Total', 'r'], ['Grades'], ['Best draft']], P.drafts.drafters.map((d, i) => `<tr><td class="name">${esc(d.manager)}</td><td class="r">${i === 0 ? `<span class="flag">${signed(d.perSeason)}</span>` : signed(d.perSeason)}</td><td class="r">${signed(d.value)}</td><td>${d.grades.split('').join(' ')}</td><td>${d.best.year} <span class="dim">(${signed(d.best.value)})</span></td></tr>`))}
   <h2>Each manager's top players</h2><p class="note">Most points in that manager's starting lineup, all seasons.</p>
   ${table([['Manager'], ['Top player'], ['Pts', 'r'], ['Second'], ['Pts', 'r'], ['Third'], ['Pts', 'r']], P.mvps.map((m) => `<tr><td class="name">${esc(m.manager)}</td>${[0, 1, 2].map((i) => m.players[i] ? `<td>${esc(m.players[i].name)}</td><td class="r">${pts(m.players[i].points)}</td>` : '<td></td><td></td>').join('')}</tr>`))}`;
+}
+
+// Trades (only when the trade history was collected)
+const T = D.trades;
+if (T) {
+  const got = (x) => [...x.players.map((p) => `${esc(p.name)}${p.points ? ` <span class="dim">${pts(p.points)}</span>` : ''}`), ...x.picks.map((k) => `<span class="dim">${esc(k)}</span>`)].join(', ') || '<span class="dim">nothing listed</span>';
+  const tradeRow = (t) => `<tr><td>${t.date}</td>${t.sides.map((x, i) => `<td class="name">${t.winner === i ? `<span class="flag">${esc(x.manager)}</span>` : esc(x.manager)}</td><td style="white-space:normal">${got(x)}</td>`).join('')}</tr>`;
+  $('#trades').innerHTML = `<h2>Trades</h2><p class="note">Every trade since ${D.seasons[0].year}. A trade's winner (flagged) is the side whose new players scored more in its starting lineup for the rest of that season. Draft picks are listed but not scored.</p>
+  ${list('Most lopsided trades', T.lopsided.map((t) => { const w = t.sides[t.winner], l = t.sides[1 - t.winner]; return [pts(t.margin), `${esc(w.manager)} over ${esc(l.manager)}`, `${t.year} · ${w.players.map((p) => esc(p.name)).join(', ')} for ${l.players.map((p) => esc(p.name)).join(', ')}`]; }), 'Points gained over the other side.')}
+  <h2>Trade records</h2><p class="note">Record in trades where both sides got players, and net points gained from them.</p>
+  ${table([['Manager'], ['Trades', 'r'], ['Record', 'r'], ['Net pts', 'r']], T.managers.map((m, i) => `<tr><td class="name">${esc(m.manager)}</td><td class="r">${m.trades}</td><td class="r">${rec(m.wins, m.losses)}</td><td class="r">${i === 0 ? `<span class="flag">${(m.net > 0 ? '+' : '') + pts(m.net)}</span>` : (m.net > 0 ? '+' : '') + pts(m.net)}</td></tr>`))}
+  <h2>Favorite trade partners</h2>
+  ${table([['Managers'], ['Trades', 'r']], T.partners.map((p) => `<tr><td class="name">${esc(p.pair)}</td><td class="r">${p.trades}</td></tr>`))}
+  <div class="picker"><h2>Every trade</h2><select id="ty" aria-label="Trade season">${[...new Set(T.trades.map((t) => t.year))].map((y) => `<option>${y}</option>`).join('')}</select></div><div id="tradelist"></div>`;
+  const tradeYear = (y) => { const ts = T.trades.filter((t) => t.year == y); $('#tradelist').innerHTML = ts.length ? table([['Date'], ['Team'], ['Got'], ['Team'], ['Got']], ts.map(tradeRow)) : '<p class="note">No trades this season.</p>'; };
+  $('#ty').onchange = (e) => { tradeYear(e.target.value); enter($('#tradelist'), { y: 0, ms: 150 }); }; tradeYear($('#ty').value);
 }
 
 // Rivalries

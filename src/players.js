@@ -7,6 +7,28 @@ const GRADES = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'F', 'F'];
 
 // positions: optional fallback { normalizedName: 'RB' } (from Sleeper's player list) for players who never started.
 export function playerStats(history, lineups, top = 10, positions = {}) {
+  const rows = lineupRows(history, lineups);
+  if (!rows.length) return null;
+
+  const bestGames = rows.filter((r) => r.started).toSorted((a, b) => b.points - a.points).slice(0, top);
+
+  const benchWeeks = Object.values(Object.groupBy(rows.filter((r) => !r.started), (r) => `${r.year}|${r.week}|${r.team}`))
+    .map((g) => ({ year: g[0].year, week: g[0].week, manager: g[0].manager, points: round2(g.reduce((a, r) => a + r.points, 0)), best: g.toSorted((a, b) => b.points - a.points)[0] }))
+    .toSorted((a, b) => b.points - a.points).slice(0, top);
+
+  // Each manager's MVPs: most points scored in their starting lineup, all seasons.
+  const mvps = Object.entries(Object.groupBy(rows.filter((r) => r.started), (r) => r.manager)).map(([manager, rs]) => ({
+    manager,
+    players: Object.entries(Object.groupBy(rs, (r) => r.name))
+      .map(([name, g]) => ({ name, points: round2(g.reduce((a, r) => a + r.points, 0)), seasons: [...new Set(g.map((r) => r.year))] }))
+      .toSorted((a, b) => b.points - a.points).slice(0, 3),
+  })).toSorted((a, b) => a.manager.localeCompare(b.manager));
+
+  return { bestGames, benchWeeks, mvps, drafts: draftGrades(history, rows, top, positionOf(rows, positions)) };
+}
+
+// Every player-week in the finished weeks: { year, week, team, manager, name, slot, points, started }.
+export function lineupRows(history, lineups) {
   const rows = [];
   for (const s of history.seasons) {
     const byId = Object.fromEntries(s.teams.map((t) => [t.id, t]));
@@ -28,23 +50,7 @@ export function playerStats(history, lineups, top = 10, positions = {}) {
       }
     }
   }
-  if (!rows.length) return null;
-
-  const bestGames = rows.filter((r) => r.started).toSorted((a, b) => b.points - a.points).slice(0, top);
-
-  const benchWeeks = Object.values(Object.groupBy(rows.filter((r) => !r.started), (r) => `${r.year}|${r.week}|${r.team}`))
-    .map((g) => ({ year: g[0].year, week: g[0].week, manager: g[0].manager, points: round2(g.reduce((a, r) => a + r.points, 0)), best: g.toSorted((a, b) => b.points - a.points)[0] }))
-    .toSorted((a, b) => b.points - a.points).slice(0, top);
-
-  // Each manager's MVPs: most points scored in their starting lineup, all seasons.
-  const mvps = Object.entries(Object.groupBy(rows.filter((r) => r.started), (r) => r.manager)).map(([manager, rs]) => ({
-    manager,
-    players: Object.entries(Object.groupBy(rs, (r) => r.name))
-      .map(([name, g]) => ({ name, points: round2(g.reduce((a, r) => a + r.points, 0)), seasons: [...new Set(g.map((r) => r.year))] }))
-      .toSorted((a, b) => b.points - a.points).slice(0, 3),
-  })).toSorted((a, b) => a.manager.localeCompare(b.manager));
-
-  return { bestGames, benchWeeks, mvps, drafts: draftGrades(history, rows, top, positionOf(rows, positions)) };
+  return rows;
 }
 
 export const nameOnly = (n) => n.toLowerCase().replace(/\b(jr|sr|ii|iii|iv|v)\b\.?/g, '').replace(/[^a-z]/g, '');
@@ -121,8 +127,17 @@ function draftGrades(history, rows, top, posOf) {
     };
   }
   const seasons = Object.values(bySeason);
+  // Best drafters: every graded season added up.
+  const drafters = Object.entries(Object.groupBy(Object.entries(bySeason).flatMap(([year, d]) => d.teams.map((t) => ({ ...t, year: Number(year) }))), (t) => t.manager))
+    .map(([manager, ts]) => ({
+      manager, seasons: ts.length, value: ts.reduce((a, t) => a + t.value, 0),
+      grades: ts.toSorted((a, b) => a.year - b.year).map((t) => t.grade).join(''),
+      best: ts.toSorted((a, b) => b.value - a.value)[0],
+    }))
+    .map((d) => ({ ...d, perSeason: Math.round(d.value / d.seasons) }))
+    .toSorted((a, b) => b.perSeason - a.perSeason);
   return {
-    bySeason,
+    bySeason, drafters,
     steals: seasons.flatMap((s) => s.steals).toSorted((a, b) => b.surplus - a.surplus).slice(0, top),
     busts: seasons.flatMap((s) => s.busts).toSorted((a, b) => a.surplus - b.surplus).slice(0, top),
   };
