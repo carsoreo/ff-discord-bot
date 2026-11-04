@@ -1,13 +1,13 @@
-# ff-discord-bot
+# move-the-chains
 
-[![test](https://github.com/carsoreo/ff-discord-bot/actions/workflows/test.yml/badge.svg)](https://github.com/carsoreo/ff-discord-bot/actions/workflows/test.yml)
+[![test](https://github.com/carsoreo/move-the-chains/actions/workflows/test.yml/badge.svg)](https://github.com/carsoreo/move-the-chains/actions/workflows/test.yml)
 
 **CO Fantasy Bot** connects a [Sleeper](https://sleeper.com) fantasy football league to a Discord server and, optionally, a GroupMe chat.
 
 - **On Discord:** every team gets its own channels for roster moves and player news, and the league shares channels for transactions and a trade block.
 - **On GroupMe:** the bot posts trade alerts and a weekly recap.
 
-The league's history site lives in its own repo, [league-hall-of-fame](https://github.com/carsoreo/league-hall-of-fame).
+The league's history site lives in its own repo, [gold-jacket](https://github.com/carsoreo/gold-jacket).
 
 ## Features
 
@@ -87,8 +87,8 @@ Requirements:
 ### 2. Configure and run
 
 ```bash
-git clone https://github.com/carsoreo/ff-discord-bot.git
-cd ff-discord-bot
+git clone https://github.com/carsoreo/move-the-chains.git
+cd move-the-chains
 npm install
 cp .env.example .env
 ```
@@ -132,16 +132,16 @@ Oracle's **Always Free** tier includes a small server that easily runs the bot, 
    echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab
    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs git
    sudo npm install -g pm2
-   git clone https://github.com/carsoreo/ff-discord-bot.git && cd ff-discord-bot && npm ci --omit=dev && mkdir -p data
+   git clone https://github.com/carsoreo/move-the-chains.git && cd move-the-chains && npm ci --omit=dev && mkdir -p data
    ```
 6. Copy your settings and the bot's memory. Stop any local copy first, or both will post everything:
    ```bash
-   scp -i ~/.ssh/oracle_ff_bot .env ubuntu@SERVER_IP:ff-discord-bot/.env
-   scp -i ~/.ssh/oracle_ff_bot data/state.json ubuntu@SERVER_IP:ff-discord-bot/data/state.json
+   scp -i ~/.ssh/oracle_ff_bot .env ubuntu@SERVER_IP:move-the-chains/.env
+   scp -i ~/.ssh/oracle_ff_bot data/state.json ubuntu@SERVER_IP:move-the-chains/data/state.json
    ```
 7. Start it and keep it running across crashes and reboots:
    ```bash
-   cd ff-discord-bot && chmod 600 .env
+   cd move-the-chains && chmod 600 .env
    pm2 start npm --name ff-bot -- start && pm2 save
    pm2 startup   # then run the command it prints
    ```
@@ -149,7 +149,7 @@ Oracle's **Always Free** tier includes a small server that easily runs the bot, 
 To deploy an update, run on the server:
 
 ```bash
-cd ff-discord-bot && git pull && npm ci --omit=dev && pm2 restart ff-bot
+cd move-the-chains && git pull && npm ci --omit=dev && pm2 restart ff-bot
 ```
 
 After editing `.env`, for example for a new season's `LEAGUE_ID`, run `pm2 restart ff-bot --update-env`.

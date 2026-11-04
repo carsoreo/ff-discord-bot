@@ -4,7 +4,7 @@ Versions follow [semantic versioning](https://semver.org).
 
 ## 2.0.0 (2026-11-03)
 
-- **Breaking:** the league Hall of Fame site moved to its own repo, [league-hall-of-fame](https://github.com/carsoreo/league-hall-of-fame).
+- **Breaking:** the league Hall of Fame site moved to its own repo, [gold-jacket](https://github.com/carsoreo/gold-jacket).
   - The bot no longer builds or serves it: `npm run site`, the site's collectors and stats code, and the `SITE_PORT` setting are gone.
   - Serve the site with any static host. `SITE_URL` still links it in `#welcome`.
 - Cleaner README.
