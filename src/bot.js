@@ -333,7 +333,8 @@ if (process.env.SITE_PORT) {
   http.createServer((req, res) => {
     fs.readFile('data/site/index.html', (err, html) => {
       if (err || !['/', '/index.html'].includes(req.url.split(/[?#]/)[0])) return res.writeHead(404).end('Not found');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(html);
+      // no-cache: browsers check for a rebuilt page each visit instead of showing a stale copy
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }).end(html);
     });
   }).listen(Number(process.env.SITE_PORT), () => console.log(`Hall of Fame site on port ${process.env.SITE_PORT}`));
 }

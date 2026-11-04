@@ -2,6 +2,10 @@
 
 Versions follow [semantic versioning](https://semver.org). See "Versions and releases" in the README.
 
+## 1.5.4 (2026-11-03)
+
+- The site is served with `Cache-Control: no-cache`, so browsers show the latest build instead of a saved copy.
+
 ## 1.5.3 (2026-11-03)
 
 - The lineup collector reads points by real column position. 2026 pages have an extra column, so every 2026 player's bye week was being read as his points.
