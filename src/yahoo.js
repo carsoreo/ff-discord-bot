@@ -65,13 +65,20 @@ export function yahooStarters(roster, teamName) {
     }));
 }
 
+// The week to recap: the last finished one. Once the season is over, current_week stops at the final week, so
+// the final week itself counts as finished.
+export function recapWeek(league) {
+  const week = Number(league.is_finished) ? Number(league.end_week) : Number(league.current_week) - 1;
+  return week >= Number(league.start_week) ? week : null;
+}
+
 // The last finished week of a Yahoo league: every matchup's score and every starter's points.
 export async function getYahooWeek(leagueId) {
   const { game } = await yget('game/nfl');
   const key = `${game.game_key}.l.${leagueId}`;
   const { league } = await yget(`league/${key}`);
-  const week = Number(league.current_week) - 1;
-  if (week < Number(league.start_week)) return null;
+  const week = recapWeek(league);
+  if (week == null) return null;
   const games = yahooGames((await yget(`league/${key}/scoreboard;week=${week}`)).league.scoreboard);
   const starters = [];
   for (const t of games.flat()) {

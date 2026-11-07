@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { Client, GatewayIntentBits, ChannelType, Events, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { get, getPlayers, getPlayerNews, getEspnIds } from './sleeper.js';
-import { teamName, playerName, nameKey, describeTransaction, tradeBlockText, weeklyRecap, sleeperWeek, playerUpdateText, welcomeText } from './format.js';
+import { teamName, playerName, nameKey, describeTransaction, tradeBlockText, weeklyRecap, sleeperWeek, sleeperRecapWeek, playerUpdateText, welcomeText, groupmeText } from './format.js';
 import { getYahooWeek } from './yahoo.js';
 
 for (const key of ['DISCORD_TOKEN', 'GUILD_ID', 'LEAGUE_ID']) {
@@ -27,13 +27,13 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const send = (channelId, content) =>
   client.channels.cache.get(channelId)?.send({ content, allowedMentions: { parse: [] } });
 
-// Posts trade alerts and weekly recaps to GroupMe when GROUPME_BOT_ID is set. GroupMe has no markdown and caps posts at 1000 chars.
+// Posts trade alerts and weekly recaps to GroupMe when GROUPME_BOT_ID is set.
 async function groupme(text) {
   if (!process.env.GROUPME_BOT_ID) return;
   const res = await fetch('https://api.groupme.com/v3/bots/post', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ bot_id: process.env.GROUPME_BOT_ID, text: text.replaceAll('**', '').slice(0, 1000) }),
+    body: JSON.stringify({ bot_id: process.env.GROUPME_BOT_ID, text: groupmeText(text) }),
   }).catch((err) => ({ ok: false, status: err.message }));
   if (!res.ok) console.error(`GroupMe post failed: ${res.status}`);
 }
@@ -160,8 +160,11 @@ async function pollTransactions() {
     if (first) continue;
     const text = describeTransaction(tx, players, league.names);
     await send(state.channels.transactions, text);
-    for (const rid of tx.roster_ids) await send(state.channels.teams[rid].moves, text);
+    for (const rid of tx.roster_ids) await send(state.channels.teams[rid]?.moves, text);
   }
+  // Only the last two weeks are ever fetched, so older ids can go.
+  state.seenTx = state.seenTx.slice(-1000);
+  state.alertedTrades = state.alertedTrades.slice(-1000);
   save();
 }
 
@@ -173,8 +176,8 @@ async function postWeeklyRecap() {
     data = await getYahooWeek(process.env.YAHOO_LEAGUE_ID);
   } else {
     const nfl = await get('/state/nfl');
-    if (!['regular', 'post'].includes(nfl.season_type) || nfl.week < 2) return;
-    const week = nfl.week - 1;
+    const week = sleeperRecapWeek(nfl);
+    if (week == null) return;
     data = { id: `sleeper-${nfl.season}-${week}`, ...sleeperWeek(week, await get(`/league/${LEAGUE_ID}/matchups/${week}`), league.names, await getPlayers(), league.rosters) };
   }
   if (!data || state.recap === data.id) return;

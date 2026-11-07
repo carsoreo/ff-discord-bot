@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { describeTransaction, teamName, weeklyRecap, sleeperWeek, playerUpdateText, nameKey, welcomeText } from '../src/format.js';
+import { describeTransaction, teamName, playerName, weeklyRecap, sleeperWeek, sleeperRecapWeek, playerUpdateText, nameKey, welcomeText, tradeBlockText, groupmeText } from '../src/format.js';
 import { flatten, yahooGames, yahooStarters } from '../src/yahoo.js';
 
 const players = {
@@ -96,4 +96,45 @@ test('welcome message names the league and links the shared channels', () => {
   assert.ok(text.length < 2000); // Discord's message limit
   assert.doesNotMatch(text, /League history/);
   assert.match(welcomeText('The Boys', {}, 'http://example.test:8080'), /League history:\*\* http:\/\/example\.test:8080/);
+});
+
+test('free agent and commissioner moves, and teams or types the bot does not know', () => {
+  assert.equal(describeTransaction({ type: 'free_agent', roster_ids: [2], adds: { 1: 2 } }, players, names), '🆓 **Free agent pickup**\n**Bravo** adds Bijan Robinson (RB, ATL)');
+  assert.equal(describeTransaction({ type: 'commissioner', roster_ids: [9], drops: { 2: 9 } }, players, names), '🛠️ **Commissioner move**\n**Team 9** drops Puka Nacua (WR, LAR)');
+  // A side with nothing to show is left out, and an unknown type is shown as is.
+  assert.equal(describeTransaction({ type: 'new_thing', roster_ids: [1, 2], adds: { 3: 1 } }, players, names), 'new_thing\n**Alpha** adds Chicago Bears (DEF, CHI)');
+});
+
+test('player names fall back to the id, and free agents show FA', () => {
+  assert.equal(playerName(players, '999'), '999');
+  assert.equal(playerName({ 5: { full_name: 'Some Guy', position: 'WR' } }, 5), 'Some Guy (WR, FA)');
+});
+
+test('trade block lists each player with what the team is asking', () => {
+  assert.equal(tradeBlockText('Alpha', [], players), '🏷️ **Alpha** has nothing on the trade block.');
+  assert.equal(tradeBlockText('Alpha', [{ id: '1', asking: 'a WR1' }, { id: '2', asking: null }], players),
+    '🏷️ **Alpha** trade block:\n• Bijan Robinson (RB, ATL) (asking: a WR1)\n• Puka Nacua (WR, LAR)');
+});
+
+test('recap standings show ties, and a team with no opponent is not a blowout', () => {
+  const week = { week: 3, games: [[{ name: 'Alpha', points: 100 }], [{ name: 'Bravo', points: 90 }, { name: 'Charlie', points: 80 }]],
+    starters: [{ name: 'X', team: 'Alpha', points: 20 }], standings: [{ name: 'Alpha', wins: 1, losses: 1, ties: 1, points: 300 }] };
+  const text = weeklyRecap(week);
+  assert.match(text, /💥 Biggest blowout: Bravo beat Charlie by 10\.00/);
+  assert.match(text, /1\. Alpha 1-1-1 \(300\.00\)/);
+});
+
+test('the Sleeper recap covers last week, only in season, and follows the fantasy week through the playoffs', () => {
+  assert.equal(sleeperRecapWeek({ season_type: 'regular', week: 9, leg: 9 }), 8);
+  assert.equal(sleeperRecapWeek({ season_type: 'regular', week: 1, leg: 1 }), null);
+  assert.equal(sleeperRecapWeek({ season_type: 'pre', week: 3, leg: 3 }), null);
+  assert.equal(sleeperRecapWeek({ season_type: 'post', week: 1, leg: 19 }), 18); // not week 1 again
+  assert.equal(sleeperRecapWeek({ season_type: 'regular', week: 5 }), 4); // older responses without leg
+});
+
+test('GroupMe text drops markdown and stays under 1000 characters without splitting an emoji', () => {
+  assert.equal(groupmeText('🚨 **Trade** done'), '🚨 Trade done');
+  const long = groupmeText('a'.repeat(999) + '🏈🏈');
+  assert.equal([...long].length, 1000);
+  assert.ok(long.endsWith('🏈'));
 });

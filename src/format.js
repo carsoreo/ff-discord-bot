@@ -76,6 +76,16 @@ export function playerUpdateText(name, item) {
   return `📰 **${name}**\n${plain(item.headline)}${short ? `\n> ${short}` : ''}`;
 }
 
+// GroupMe has no markdown and caps posts at 1000 characters; cut by code point so an emoji isn't split in half.
+export const groupmeText = (text) => [...text.replaceAll('**', '')].slice(0, 1000).join('');
+
+// The Sleeper week to recap: the one before the current fantasy week, during the season. Uses `leg`, the fantasy
+// week, which keeps counting through the NFL postseason; `week` can start over then, which would repeat an old recap.
+export function sleeperRecapWeek(nfl) {
+  const current = nfl.leg ?? nfl.week;
+  return ['regular', 'post'].includes(nfl.season_type) && current >= 2 ? current - 1 : null;
+}
+
 // The same week shape from either league source:
 // { week, games: [[{ name, points }, …]], starters: [{ name, team, points }], standings?: [{ name, wins, losses, ties, points }] }
 export function sleeperWeek(week, matchups, names, players, rosters = []) {

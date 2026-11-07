@@ -2,6 +2,15 @@
 
 Versions follow [semantic versioning](https://semver.org).
 
+## 2.0.1 (2026-11-07)
+
+- The Sleeper weekly recap follows the fantasy week (`leg`) instead of the NFL week, which can start over in the NFL postseason and would have reposted an old recap.
+- A Yahoo league gets a recap for its final week too. Before, the recap stopped one week short once the season ended.
+- GroupMe posts are cut to 1000 characters without splitting an emoji.
+- The bot only keeps the last 1000 transaction and trade ids it has seen, so `data/state.json` stops growing.
+- Tests cover every transaction type, the trade block, recap weeks, Yahoo's JSON and the Sleeper and ESPN requests (with `fetch` stubbed). CI tests Node 22 and 24.
+- The README has a development section.
+
 ## 2.0.0 (2026-11-03)
 
 - **Breaking:** the league Hall of Fame site moved to its own repo, [gold-jacket](https://github.com/carsoreo/gold-jacket).

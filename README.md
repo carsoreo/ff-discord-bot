@@ -101,7 +101,7 @@ cp .env.example .env
 | `GROUPME_BOT_ID` | Optional. See step 3. |
 | `SITE_URL` | Optional. A league history site to link in `#welcome`. |
 
-Start it with `npm start`, and run `npm test` to check the formatting logic.
+Start it with `npm start`.
 
 `.env` holds your secrets, and `data/state.json` holds the bot's memory: channels, links, trade blocks and what it has posted. Both are gitignored. Back up `data/state.json`; without it the bot forgets links and trade blocks.
 
@@ -167,6 +167,27 @@ The weekly recap can read a Yahoo league instead of Sleeper. Yahoo only serves f
 3. Run `npm run yahoo-auth` and follow the prompts. It saves `YAHOO_REFRESH_TOKEN` to `.env`.
 
 Remove `YAHOO_LEAGUE_ID` to switch the recap back to Sleeper.
+
+## Development
+
+```bash
+npm install
+npm test
+```
+
+Tests use Node's built-in runner and never touch the network: Sleeper and ESPN requests are stubbed.
+
+| Path | What's in it |
+|---|---|
+| `src/bot.js` | The Discord client: channels, slash commands, roles and the polling loops |
+| `src/format.js` | Every message the bot posts, and the recap logic |
+| `src/sleeper.js` | Sleeper's API, its cached player list, and ESPN's player ids and news |
+| `src/yahoo.js` | Yahoo's Fantasy API, for recaps from a Yahoo league |
+| `scripts/` | `npm run recap` and `npm run yahoo-auth` |
+
+`src/bot.js` connects to Discord when it loads, so it isn't unit tested: logic worth testing lives in the other files. To try a change, run it against a test Discord server with its own `.env`. Never run a second copy against the real server while the production bot is up, or both will post everything.
+
+CI runs the tests on Node 22 and 24 for every push.
 
 ## License
 
